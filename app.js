@@ -94,8 +94,6 @@ function setup() {
 
 function generateTxt() {
   const desc = (document.querySelector('#desc').value || 'Caso ZAPEL').trim();
-  const nm = parseInt(document.querySelector('#nm').value || '0', 10);
-  const nn = parseInt(document.querySelector('#nn').value || '0', 10);
   const ela = parseFloat(document.querySelector('#ela').value || '0');
   const jbwInput = document.querySelector('#jbw').value;
 
@@ -103,9 +101,11 @@ function generateTxt() {
   const supportsTbody = document.querySelector('#supports-table tbody');
   const fyTbody = document.querySelector('#fy-table tbody');
 
-  // Leer elementos
+  // 1) Leer elementos
   const elements = [];
   let maxSpan = 0;
+  let maxNode = 0;
+
   Array.from(elementsTbody.querySelectorAll('tr')).forEach((tr, idx) => {
     const ni = parseInt(tr.querySelector('.el-ni').value || '1', 10);
     const nj = parseInt(tr.querySelector('.el-nj').value || '1', 10);
@@ -118,41 +118,55 @@ function generateTxt() {
     const span = Math.abs(nj - ni);
     if (span > maxSpan) maxSpan = span;
 
+    if (ni > maxNode) maxNode = ni;
+    if (nj > maxNode) maxNode = nj;
+
     elements.push({ mem: idx + 1, ni, nj, I, A, L, pa, pb });
   });
 
-  // jbw sugerido si no se da
-  let jbw;
-  if (jbwInput) {
-    jbw = parseInt(jbwInput, 10);
-  } else {
-    jbw = 3 + 3 * maxSpan;
-  }
+  // nm = # de elementos realmente definidos
+  const nm = elements.length;
 
-  // Soportes
+  // 2) Leer soportes
   const supports = [];
   Array.from(supportsTbody.querySelectorAll('tr')).forEach(tr => {
     const node = parseInt(tr.querySelector('.sup-node').value || '1', 10);
     const kx = parseInt(tr.querySelector('.sup-kx').value || '0', 10);
     const ky = parseInt(tr.querySelector('.sup-ky').value || '0', 10);
     const kr = parseInt(tr.querySelector('.sup-kr').value || '0', 10);
+
+    if (node > maxNode) maxNode = node;
+
     supports.push({ node, kx, ky, kr });
   });
   const na = supports.length;
 
-  // Cargas en Y
+  // 3) Leer cargas en Y
   const loadsFy = [];
   Array.from(fyTbody.querySelectorAll('tr')).forEach(tr => {
     const node = parseInt(tr.querySelector('.fy-node').value || '1', 10);
     const val  = parseFloat(tr.querySelector('.fy-val').value || '0');
+
+    if (node > maxNode) maxNode = node;
+
     loadsFy.push({ node, val });
   });
   const nca2 = loadsFy.length;
 
-  // Datos fijos
-  const nspd = 0;
-  const nca1 = 0;
-  const nca3 = 0;
+  // nn = mayor número de nodo que aparece
+  const nn = maxNode === 0 ? 1 : maxNode;
+
+  // 4) Parámetros fijos o derivados
+  let jbw;
+  if (jbwInput) {
+    jbw = parseInt(jbwInput, 10);
+  } else {
+    jbw = 3 + 3 * maxSpan;  // regla típica para ancho de banda
+  }
+
+  const nspd = 0;  // sin desplazamientos prescritos en esta versión
+  const nca1 = 0;  // sin cargas en X
+  const nca3 = 0;  // sin momentos nodales
 
   const lines = [];
 
@@ -162,7 +176,7 @@ function generateTxt() {
   // Línea 2: descripción
   lines.push(desc);
 
-  // Línea 3: global (formato compacto que usa tu ZAPEL77P)
+  // Línea 3: global (igual estructura que tu acera.txt que corre bien)
   lines.push(
     `${nm}  ${nn}  ${na}  ${nspd}  ${jbw}  ${nca1}  ${nca2}  ${nca3}  ${ela}`
   );
@@ -170,20 +184,22 @@ function generateTxt() {
   // Líneas de elementos
   elements.forEach(el => {
     let line = `${el.mem}  ${el.ni}  ${el.nj}   ${el.I}  ${el.A}  ${el.L}`;
-    if (Math.abs(el.pa) > 1e-9 || Math.abs(el.pb) > 1e-9) {
-      line += `                    ${el.pa}  ${el.pb}`;
-    }
+
+    // Sugerencia: SIEMPRE escribir pa y pb, aunque sean 0,
+    // para que el número de campos sea constante.
+    line += `  ${el.pa}  ${el.pb}`;
+
     lines.push(line);
   });
 
-  // Línea de apoyos
+  // Línea de apoyos (na  nodo kx ky kr ...)
   let supLine = `${na}`;
   supports.forEach(s => {
     supLine += ` ${s.node} ${s.kx} ${s.ky} ${s.kr}`;
   });
   lines.push(supLine);
 
-  // Línea de cargas en Y (si hay)
+  // Línea de cargas en Y
   if (nca2 > 0) {
     let fyLine = `${nca2}`;
     loadsFy.forEach(L => {
@@ -192,7 +208,7 @@ function generateTxt() {
     lines.push(fyLine);
   }
 
-  return lines.join('\n');
+  return lines.join('\\n');
 }
 
 function downloadFile(filename, content) {
