@@ -1,14 +1,15 @@
 function createElementRow(index) {
   const tr = document.createElement('tr');
   tr.innerHTML = `
-    <td>${index}</td>
+    <td class="el-index">${index}</td>
     <td><input type="number" min="1" class="el-ni" value="${index}"></td>
     <td><input type="number" min="1" class="el-nj" value="${index + 1}"></td>
     <td><input type="number" step="any" class="el-I" value="0.0241"></td>
     <td><input type="number" step="any" class="el-A" value="1.66"></td>
     <td><input type="number" step="any" class="el-L" value="5.00"></td>
-    <td><input type="number" step="any" class="el-pa" value="0"></td>
-    <td><input type="number" step="any" class="el-pb" value="0"></td>
+    <td><input type="number" step="any" class="el-pa" value="0.00"></td>
+    <td><input type="number" step="any" class="el-pb" value="0.00"></td>
+    <td><button type="button" class="remove-btn">X</button></td>
   `;
   return tr;
 }
@@ -50,27 +51,32 @@ function createFyRow() {
   return tr;
 }
 
+function renumberElements() {
+  const rows = document.querySelectorAll('#elements-table tbody tr');
+  rows.forEach((tr, idx) => {
+    const cell = tr.querySelector('.el-index');
+    if (cell) cell.textContent = (idx + 1).toString();
+  });
+}
+
 function setup() {
   const elementsTbody = document.querySelector('#elements-table tbody');
   const supportsTbody = document.querySelector('#supports-table tbody');
   const fyTbody = document.querySelector('#fy-table tbody');
   const preview = document.querySelector('#preview');
 
-  // Crear filas de elementos según nm
-  document.querySelector('#btn-gen-elements').addEventListener('click', () => {
-    const nm = parseInt(document.querySelector('#nm').value || '0', 10);
-    elementsTbody.innerHTML = '';
-    for (let i = 1; i <= nm; i++) {
-      elementsTbody.appendChild(createElementRow(i));
-    }
+  // Añadir elemento
+  document.querySelector('#btn-add-element').addEventListener('click', () => {
+    const index = elementsTbody.querySelectorAll('tr').length + 1;
+    elementsTbody.appendChild(createElementRow(index));
   });
 
-  // Añadir soportes
+  // Añadir soporte
   document.querySelector('#btn-add-support').addEventListener('click', () => {
     supportsTbody.appendChild(createSupportRow());
   });
 
-  // Añadir cargas en Y
+  // Añadir carga en Y
   document.querySelector('#btn-add-fy').addEventListener('click', () => {
     fyTbody.appendChild(createFyRow());
   });
@@ -79,7 +85,15 @@ function setup() {
   document.body.addEventListener('click', (e) => {
     if (e.target.classList.contains('remove-btn')) {
       const tr = e.target.closest('tr');
-      if (tr) tr.remove();
+      const tbody = tr && tr.parentElement;
+      if (tr && tbody) {
+        tbody.removeChild(tr);
+        if (tbody.id === 'elements-table') {
+          renumberElements();
+        } else if (tbody.parentElement && tbody.parentElement.id === 'elements-table') {
+          renumberElements();
+        }
+      }
     }
   });
 
@@ -87,7 +101,7 @@ function setup() {
   document.querySelector('#btn-generate').addEventListener('click', () => {
     const txt = generateTxt();
     preview.textContent = txt;
-    const filename = document.querySelector('#filename').value || 'caso_zapel.txt';
+    const filename = document.querySelector('#filename').value || 'acera.txt';
     downloadFile(filename, txt);
   });
 }
@@ -101,7 +115,6 @@ function generateTxt() {
   const supportsTbody = document.querySelector('#supports-table tbody');
   const fyTbody = document.querySelector('#fy-table tbody');
 
-  // 1) Leer elementos
   const elements = [];
   let maxSpan = 0;
   let maxNode = 0;
@@ -124,9 +137,8 @@ function generateTxt() {
     elements.push({ mem: idx + 1, ni, nj, I, A, L, pa, pb });
   });
 
-  const nm = elements.length;   // nº de elementos
+  const nm = elements.length;
 
-  // 2) Leer soportes
   const supports = [];
   Array.from(supportsTbody.querySelectorAll('tr')).forEach(tr => {
     const node = parseInt(tr.querySelector('.sup-node').value || '1', 10);
@@ -138,77 +150,71 @@ function generateTxt() {
 
     supports.push({ node, kx, ky, kr });
   });
-  const na = supports.length;   // nº de nodos con apoyo
+  const na = supports.length;
 
-  // 3) Leer cargas en Y
   const loadsFy = [];
   Array.from(fyTbody.querySelectorAll('tr')).forEach(tr => {
     const node = parseInt(tr.querySelector('.fy-node').value || '1', 10);
     const val  = parseFloat(tr.querySelector('.fy-val').value || '0');
 
     if (node > maxNode) maxNode = node;
-
     loadsFy.push({ node, val });
   });
-  const nca2 = loadsFy.length;  // nº de cargas en Y
+  const nca2 = loadsFy.length;
 
-  // nn = mayor nº de nodo que aparece
   const nn = maxNode === 0 ? 1 : maxNode;
 
-  // 4) Parámetros fijos o derivados
   let jbw;
   if (jbwInput) {
     jbw = parseInt(jbwInput, 10);
   } else {
-    jbw = 3 + 3 * maxSpan;  // regla sugerida para ancho de banda
+    jbw = 3 + 3 * maxSpan;
   }
 
-  const nspd = 0;  // sin desplazamientos prescritos
-  const nca1 = 0;  // sin cargas en X
-  const nca3 = 0;  // sin momentos nodales
+  const nspd = 0;
+  const nca1 = 0;
+  const nca3 = 0;
 
   const lines = [];
 
-// Línea 1: descripción (título del caso)
-lines.push(desc);
+  // Línea 1: descripción
+  lines.push(desc);
 
-  // Línea 2: línea global
+  // Línea 2: global, Ela con un decimal
   lines.push(
     `${nm}  ${nn}  ${na}  ${nspd}  ${jbw}  ${nca1}  ${nca2}  ${nca3}  ${Number(ela).toFixed(1)}`
+  );
 
-
-  // Líneas de elementos
+  // Líneas de elementos, todos reales con decimales fijos
   elements.forEach(el => {
-    // siempre ponemos pa y pb para que el nº de columnas sea constante
     const line =
-  `${el.mem}  ${el.ni}  ${el.nj}` +
-  `   ${Number(el.I).toFixed(4)}` +
-  `  ${Number(el.A).toFixed(2)}` +
-  `  ${Number(el.L).toFixed(2)}` +
-  `  ${Number(el.pa).toFixed(2)}` +
-  `  ${Number(el.pb).toFixed(2)}`;
-
+      `${el.mem}  ${el.ni}  ${el.nj}` +
+      `   ${Number(el.I).toFixed(4)}` +
+      `  ${Number(el.A).toFixed(2)}` +
+      `  ${Number(el.L).toFixed(2)}` +
+      `  ${Number(el.pa).toFixed(2)}` +
+      `  ${Number(el.pb).toFixed(2)}`;
     lines.push(line);
   });
 
-  // Línea de apoyos: na  nodo kx ky kr ...
+  // Línea de apoyos
   let supLine = `${na}`;
   supports.forEach(s => {
     supLine += ` ${s.node} ${s.kx} ${s.ky} ${s.kr}`;
   });
   lines.push(supLine);
 
-  // Línea de cargas en Y (si hay)
+  // Línea de cargas en Y
   if (nca2 > 0) {
     let fyLine = `${nca2}`;
     loadsFy.forEach(L => {
-      fyLine += ` ${L.node} ${L.val}`;
+      fyLine += ` ${L.node} ${Number(L.val).toFixed(2)}`;
     });
     lines.push(fyLine);
   }
 
-  // <-- AQUÍ EL CAMBIO CRÍTICO: salto de línea real
-return lines.join('\n');
+  // Saltos de línea reales
+  return lines.join('\n');
 }
 
 function downloadFile(filename, content) {
