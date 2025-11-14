@@ -174,20 +174,15 @@ function generateTxt() {
   const nspd = 0;
   const nca1 = 0;
   const nca3 = 0;
-
   const lines = [];
-
 // Línea 1: número de casos (para ZAPEL77P)
 lines.push('1');
-
 // Línea 2: descripción
 lines.push(desc);
-
 // Línea 3: global
 lines.push(
   `${nm}  ${nn}  ${na}  ${nspd}  ${jbw}  ${nca1}  ${nca2}  ${nca3}  ${Number(ela).toFixed(1)}`
 );
-
   // Líneas de elementos, todos reales con decimales fijos
   elements.forEach(el => {
     const line =
