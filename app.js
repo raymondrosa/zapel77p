@@ -177,8 +177,6 @@ function generateTxt() {
 
   const lines = [];
 
- const lines = [];
-
 // Línea 1: número de casos (para ZAPEL77P)
 lines.push('1');
 
