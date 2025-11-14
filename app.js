@@ -124,8 +124,7 @@ function generateTxt() {
     elements.push({ mem: idx + 1, ni, nj, I, A, L, pa, pb });
   });
 
-  // nm = # de elementos realmente definidos
-  const nm = elements.length;
+  const nm = elements.length;   // nº de elementos
 
   // 2) Leer soportes
   const supports = [];
@@ -139,7 +138,7 @@ function generateTxt() {
 
     supports.push({ node, kx, ky, kr });
   });
-  const na = supports.length;
+  const na = supports.length;   // nº de nodos con apoyo
 
   // 3) Leer cargas en Y
   const loadsFy = [];
@@ -151,9 +150,9 @@ function generateTxt() {
 
     loadsFy.push({ node, val });
   });
-  const nca2 = loadsFy.length;
+  const nca2 = loadsFy.length;  // nº de cargas en Y
 
-  // nn = mayor número de nodo que aparece
+  // nn = mayor nº de nodo que aparece
   const nn = maxNode === 0 ? 1 : maxNode;
 
   // 4) Parámetros fijos o derivados
@@ -161,45 +160,40 @@ function generateTxt() {
   if (jbwInput) {
     jbw = parseInt(jbwInput, 10);
   } else {
-    jbw = 3 + 3 * maxSpan;  // regla típica para ancho de banda
+    jbw = 3 + 3 * maxSpan;  // regla sugerida para ancho de banda
   }
 
-  const nspd = 0;  // sin desplazamientos prescritos en esta versión
+  const nspd = 0;  // sin desplazamientos prescritos
   const nca1 = 0;  // sin cargas en X
   const nca3 = 0;  // sin momentos nodales
 
   const lines = [];
 
-  // Línea 1: número de casos
-  lines.push('1');
-
-  // Línea 2: descripción
+  // Línea 1: descripción (igual que en tu acera.txt que funciona)
   lines.push(desc);
 
-  // Línea 3: global (igual estructura que tu acera.txt que corre bien)
+  // Línea 2: línea global
   lines.push(
     `${nm}  ${nn}  ${na}  ${nspd}  ${jbw}  ${nca1}  ${nca2}  ${nca3}  ${ela}`
   );
 
   // Líneas de elementos
   elements.forEach(el => {
-    let line = `${el.mem}  ${el.ni}  ${el.nj}   ${el.I}  ${el.A}  ${el.L}`;
-
-    // Sugerencia: SIEMPRE escribir pa y pb, aunque sean 0,
-    // para que el número de campos sea constante.
-    line += `  ${el.pa}  ${el.pb}`;
-
+    // siempre ponemos pa y pb para que el nº de columnas sea constante
+    const line =
+      `${el.mem}  ${el.ni}  ${el.nj}   ${el.I}  ${el.A}  ${el.L}` +
+      `  ${el.pa}  ${el.pb}`;
     lines.push(line);
   });
 
-  // Línea de apoyos (na  nodo kx ky kr ...)
+  // Línea de apoyos: na  nodo kx ky kr ...
   let supLine = `${na}`;
   supports.forEach(s => {
     supLine += ` ${s.node} ${s.kx} ${s.ky} ${s.kr}`;
   });
   lines.push(supLine);
 
-  // Línea de cargas en Y
+  // Línea de cargas en Y (si hay)
   if (nca2 > 0) {
     let fyLine = `${nca2}`;
     loadsFy.forEach(L => {
@@ -208,7 +202,8 @@ function generateTxt() {
     lines.push(fyLine);
   }
 
-  return lines.join('\\n');
+  // <-- AQUÍ EL CAMBIO CRÍTICO: salto de línea real
+  return lines.join('\n');
 }
 
 function downloadFile(filename, content) {
