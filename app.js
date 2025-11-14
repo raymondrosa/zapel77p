@@ -169,8 +169,8 @@ function generateTxt() {
 
   const lines = [];
 
-  // Línea 1: descripción (igual que en tu acera.txt que funciona)
-  lines.push(desc);
+// Línea 1: descripción (título del caso)
+lines.push(desc);
 
   // Línea 2: línea global
   lines.push(
@@ -203,7 +203,7 @@ function generateTxt() {
   }
 
   // <-- AQUÍ EL CAMBIO CRÍTICO: salto de línea real
-  return lines.join('\n');
+return lines.join('\n');
 }
 
 function downloadFile(filename, content) {
