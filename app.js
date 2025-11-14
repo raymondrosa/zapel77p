@@ -174,15 +174,20 @@ lines.push(desc);
 
   // Línea 2: línea global
   lines.push(
-    `${nm}  ${nn}  ${na}  ${nspd}  ${jbw}  ${nca1}  ${nca2}  ${nca3}  ${ela}`
-  );
+    `${nm}  ${nn}  ${na}  ${nspd}  ${jbw}  ${nca1}  ${nca2}  ${nca3}  ${Number(ela).toFixed(1)}`
+
 
   // Líneas de elementos
   elements.forEach(el => {
     // siempre ponemos pa y pb para que el nº de columnas sea constante
     const line =
-      `${el.mem}  ${el.ni}  ${el.nj}   ${el.I}  ${el.A}  ${el.L}` +
-      `  ${el.pa}  ${el.pb}`;
+  `${el.mem}  ${el.ni}  ${el.nj}` +
+  `   ${Number(el.I).toFixed(4)}` +
+  `  ${Number(el.A).toFixed(2)}` +
+  `  ${Number(el.L).toFixed(2)}` +
+  `  ${Number(el.pa).toFixed(2)}` +
+  `  ${Number(el.pb).toFixed(2)}`;
+
     lines.push(line);
   });
 
