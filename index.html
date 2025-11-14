@@ -125,10 +125,35 @@
         (el signo dependerá de la convención de tu programa).
       </p>
     </section>
-
-    <!-- 5. Generar archivo -->
+    <!-- 5. Vista gráfica del modelo -->
     <section>
-      <h2>5. Generar archivo .txt</h2>
+      <h2>5. Vista gráfica del modelo</h2>
+      <p class="hint">
+        Vista esquemática en 2D de la viga: nodos, elementos, apoyos y cargas en Y.
+        No está a escala, pero respeta el orden de los nodos.
+      </p>
+      <canvas id="modelCanvas" width="800" height="220"
+              style="border:1px solid #ddd; border-radius:8px; background:#ffffff;"></canvas>
+    </section>
+
+    <!-- 6. Generar archivo .txt -->
+    <section>
+      <h2>6. Generar archivo .txt</h2>
+
+      <label>Nombre del archivo .txt
+        <input id="filename" value="acera.txt">
+      </label>
+
+      <button id="btn-generate" type="button" class="primary">
+        Generar y descargar archivo .txt
+      </button>
+
+      <pre id="preview" class="preview"></pre>
+    </section>
+
+    <!-- 6. Generar archivo .txt -->
+    <section>
+      <h2>6. Generar archivo .txt</h2>
 
       <label>Nombre del archivo .txt
         <input id="filename" value="acera.txt">
