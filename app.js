@@ -59,6 +59,170 @@ function renumberElements() {
   });
 }
 
+/* ----------------- DIBUJO DEL MODELO EN CANVAS ----------------- */
+
+function drawModel() {
+  const canvas = document.getElementById('modelCanvas');
+  if (!canvas || !canvas.getContext) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.font = '11px system-ui';
+
+  const elementsTbody = document.querySelector('#elements-table tbody');
+  const supportsTbody = document.querySelector('#supports-table tbody');
+  const fyTbody = document.querySelector('#fy-table tbody');
+
+  // Leer elementos
+  const elements = [];
+  const nodeSet = new Set();
+
+  Array.from(elementsTbody.querySelectorAll('tr')).forEach(tr => {
+    const ni = parseInt(tr.querySelector('.el-ni').value || '0', 10);
+    const nj = parseInt(tr.querySelector('.el-nj').value || '0', 10);
+    if (!ni || !nj) return;
+    elements.push({ ni, nj });
+    nodeSet.add(ni);
+    nodeSet.add(nj);
+  });
+
+  if (elements.length === 0 || nodeSet.size === 0) {
+    ctx.fillStyle = '#555';
+    ctx.fillText('Añade elementos para ver el modelo.', 20, h / 2);
+    return;
+  }
+
+  // Ordenar nodos y asignar posiciones en X (no a escala, pero en orden)
+  const nodes = Array.from(nodeSet).sort((a, b) => a - b);
+  const marginX = 40;
+  const span = nodes.length > 1 ? (w - 2 * marginX) / (nodes.length - 1) : 0;
+  const baseY = h / 2;
+
+  const nodePos = {};
+  nodes.forEach((n, i) => {
+    nodePos[n] = marginX + span * i;
+  });
+
+  // Dibujar elementos (viga)
+  ctx.strokeStyle = '#111';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  elements.forEach(el => {
+    const x1 = nodePos[el.ni];
+    const x2 = nodePos[el.nj];
+    if (x1 == null || x2 == null) return;
+    ctx.moveTo(x1, baseY);
+    ctx.lineTo(x2, baseY);
+  });
+  ctx.stroke();
+
+  // Dibujar nodos
+  nodes.forEach(n => {
+    const x = nodePos[n];
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#111';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(x, baseY, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#111';
+    ctx.fillText(String(n), x - 3, baseY - 10);
+  });
+
+  // Leer apoyos
+  const supports = [];
+  Array.from(supportsTbody.querySelectorAll('tr')).forEach(tr => {
+    const node = parseInt(tr.querySelector('.sup-node').value || '0', 10);
+    const kx = parseInt(tr.querySelector('.sup-kx').value || '0', 10);
+    const ky = parseInt(tr.querySelector('.sup-ky').value || '0', 10);
+    const kr = parseInt(tr.querySelector('.sup-kr').value || '0', 10);
+    if (!node) return;
+    supports.push({ node, kx, ky, kr });
+  });
+
+  // Dibujar apoyos como triángulos debajo del nodo si tienen ky fijo
+  ctx.fillStyle = '#1d4ed8';
+  ctx.strokeStyle = '#1d4ed8';
+  supports.forEach(s => {
+    const x = nodePos[s.node];
+    if (x == null) return;
+
+    // Si hay fijación vertical (ky=1), dibujamos un triángulo
+    if (s.ky === 1) {
+      const yTop = baseY + 8;
+      ctx.beginPath();
+      ctx.moveTo(x - 10, yTop);
+      ctx.lineTo(x + 10, yTop);
+      ctx.lineTo(x, yTop + 14);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Si también hay fijación horizontal (kx=1), añadimos un rectángulo pequeño
+    if (s.kx === 1) {
+      ctx.fillRect(x - 3, baseY + 22, 6, 8);
+    }
+
+    // Si la rotación está fija (kr=1), marcamos un pequeño círculo
+    if (s.kr === 1) {
+      ctx.beginPath();
+      ctx.arc(x, baseY - 14, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+
+  // Leer cargas en Y
+  const loadsFy = [];
+  Array.from(fyTbody.querySelectorAll('tr')).forEach(tr => {
+    const node = parseInt(tr.querySelector('.fy-node').value || '0', 10);
+    const val  = parseFloat(tr.querySelector('.fy-val').value || '0');
+    if (!node || Math.abs(val) < 1e-9) return;
+    loadsFy.push({ node, val });
+  });
+
+  // Dibujar cargas como flechas (hacia abajo si val < 0, hacia arriba si val > 0)
+  ctx.strokeStyle = '#b91c1c';
+  ctx.fillStyle = '#b91c1c';
+  loadsFy.forEach(L => {
+    const x = nodePos[L.node];
+    if (x == null) return;
+
+    const down = L.val < 0; // si negativo, dibujamos hacia abajo
+    const len = 26;
+    const y0 = baseY + (down ? -len : len);
+    const y1 = baseY + (down ? -6 : 6);
+
+    // Línea de la flecha
+    ctx.beginPath();
+    ctx.moveTo(x, y0);
+    ctx.lineTo(x, y1);
+    ctx.stroke();
+
+    // Cabeza de flecha
+    ctx.beginPath();
+    if (down) {
+      ctx.moveTo(x - 5, y1 - 5);
+      ctx.lineTo(x, y1);
+      ctx.lineTo(x + 5, y1 - 5);
+    } else {
+      ctx.moveTo(x - 5, y1 + 5);
+      ctx.lineTo(x, y1);
+      ctx.lineTo(x + 5, y1 + 5);
+    }
+    ctx.stroke();
+
+    // Texto de magnitud
+    const txt = L.val.toFixed(2);
+    ctx.fillText(txt, x + 6, y0 + (down ? -4 : 12));
+  });
+}
+
+/* ----------------- LÓGICA PRINCIPAL DEL WIZARD ----------------- */
+
 function setup() {
   const elementsTbody = document.querySelector('#elements-table tbody');
   const supportsTbody = document.querySelector('#supports-table tbody');
@@ -69,16 +233,19 @@ function setup() {
   document.querySelector('#btn-add-element').addEventListener('click', () => {
     const index = elementsTbody.querySelectorAll('tr').length + 1;
     elementsTbody.appendChild(createElementRow(index));
+    drawModel();
   });
 
   // Añadir soporte
   document.querySelector('#btn-add-support').addEventListener('click', () => {
     supportsTbody.appendChild(createSupportRow());
+    drawModel();
   });
 
   // Añadir carga en Y
   document.querySelector('#btn-add-fy').addEventListener('click', () => {
     fyTbody.appendChild(createFyRow());
+    drawModel();
   });
 
   // Botones X (eliminar filas)
@@ -93,7 +260,25 @@ function setup() {
         } else if (tbody.parentElement && tbody.parentElement.id === 'elements-table') {
           renumberElements();
         }
+        drawModel();
       }
+    }
+  });
+
+  // Redibujar cuando cambie algo en las tablas
+  document.body.addEventListener('input', (e) => {
+    if (
+      e.target.classList.contains('el-ni') ||
+      e.target.classList.contains('el-nj') ||
+      e.target.classList.contains('el-L') ||
+      e.target.classList.contains('sup-node') ||
+      e.target.classList.contains('sup-kx') ||
+      e.target.classList.contains('sup-ky') ||
+      e.target.classList.contains('sup-kr') ||
+      e.target.classList.contains('fy-node') ||
+      e.target.classList.contains('fy-val')
+    ) {
+      drawModel();
     }
   });
 
@@ -104,6 +289,9 @@ function setup() {
     const filename = document.querySelector('#filename').value || 'acera.txt';
     downloadFile(filename, txt);
   });
+
+  // Dibujo inicial vacío
+  drawModel();
 }
 
 function generateTxt() {
@@ -174,15 +362,20 @@ function generateTxt() {
   const nspd = 0;
   const nca1 = 0;
   const nca3 = 0;
+
   const lines = [];
-// Línea 1: número de casos (para ZAPEL77P)
-lines.push('1');
-// Línea 2: descripción
-lines.push(desc);
-// Línea 3: global
-lines.push(
-  `${nm}  ${nn}  ${na}  ${nspd}  ${jbw}  ${nca1}  ${nca2}  ${nca3}  ${Number(ela).toFixed(1)}`
-);
+
+  // Línea 1: número de casos (si lo necesitas para tu ZAPEL)
+  lines.push('1');
+
+  // Línea 2: descripción
+  lines.push(desc);
+
+  // Línea 3: global, Ela con un decimal
+  lines.push(
+    `${nm}  ${nn}  ${na}  ${nspd}  ${jbw}  ${nca1}  ${nca2}  ${nca3}  ${Number(ela).toFixed(1)}`
+  );
+
   // Líneas de elementos, todos reales con decimales fijos
   elements.forEach(el => {
     const line =
@@ -211,7 +404,6 @@ lines.push(
     lines.push(fyLine);
   }
 
-  // Saltos de línea reales
   return lines.join('\n');
 }
 
