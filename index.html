@@ -3,72 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZAPEL77P - Generador de Entrada (FIXED)</title>
+    <title>ZAPEL77P - Generador Input</title>
     <style>
-        body {font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; padding: 20px;}
-        h1 {text-align: center; color: #0066cc;}
-        .section {background: white; padding: 20px; margin: 20px auto; max-width: 1000px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);}
-        label {display: inline-block; width: 300px; margin: 8px 0 4px;}
-        input, textarea, select {width: 250px; padding: 6px;}
+        body {font-family: Arial; margin: 20px; background: #f4f4f4;}
+        .section {background: white; padding: 15px; margin: 10px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);}
+        input, textarea, button {margin: 5px; padding: 8px; font-size: 14px;}
         table {width: 100%; border-collapse: collapse; margin: 10px 0;}
-        th, td {border: 1px solid #ccc; padding: 8px; text-align: center;}
+        th, td {border: 1px solid #ccc; padding: 6px; text-align: center;}
         th {background: #0066cc; color: white;}
-        button {background: #0066cc; color: white; border: none; padding: 10px 20px; margin: 10px; cursor: pointer; border-radius: 5px;}
+        button {background: #0066cc; color: white; border: none; cursor: pointer; border-radius: 5px;}
         button:hover {background: #0055aa;}
-        #outputTextarea {width: 100%; height: 500px; font-family: monospace; background: #f8f8f8; padding: 10px;}
-        .removeBtn {background: #cc0000; padding: 5px 10px;}
-        .addBtn {background: #28a745; margin: 5px;}
-        .error {color: red; font-weight: bold;}
+        #output {width: 100%; height: 400px; font-family: monospace; padding: 10px; background: #f8f8f8;}
+        .add {background: #28a745;}
+        .del {background: #dc3545; color: white;}
     </style>
 </head>
 <body>
 
-<h1>ZAPEL77P - Generador de Entrada (100% FUNCIONAL)</h1>
-<p style="text-align:center;">Ahora SÍ genera el archivo. Prueba con valores por defecto → "GENERAR" → verás el input.</p>
+<h1 style="text-align:center; color:#0066cc;">ZAPEL77P - Generador de Input</h1>
 
 <div class="section">
-    <h2>Número de casos</h2>
-    <label>Número de casos (kasos):</label>
-    <input type="number" id="kasos" min="1" value="1" onchange="updateCases()">
-    <button onclick="updateCases()">Actualizar</button>
+    <label>Número de casos:</label>
+    <input type="number" id="kasos" value="1" min="1">
+    <button onclick="init()">Actualizar Casos</button>
 </div>
 
-<div id="casesContainer"></div>
+<div id="cases"></div>
 
-<button onclick="generateInput()">GENERAR ARCHIVO input.txt</button>
-<textarea id="outputTextarea" placeholder="Aquí aparecerá el archivo..." readonly></textarea>
-<button onclick="downloadTxt()">DESCARGAR input.txt</button>
+<button onclick="generate()" style="font-size:18px; padding:12px 30px;">GENERAR input.txt</button>
+<textarea id="output" placeholder="Aquí aparecerá el input formateado..."></textarea>
+<button onclick="download()">DESCARGAR input.txt</button>
 
 <script>
+// --- DATOS ---
 let cases = [];
 
-function updateCases() {
-    const kasos = parseInt(document.getElementById('kasos').value) || 1;
-    const container = document.getElementById('casesContainer');
+function init() {
+    const n = parseInt(document.getElementById('kasos').value) || 1;
+    const container = document.getElementById('cases');
     container.innerHTML = '';
     cases = [];
 
-    for (let c = 1; c <= kasos; c++) {
-        const caseDiv = document.createElement('div');
-        caseDiv.className = 'section';
-        caseDiv.innerHTML = `
-            <h2>Caso ${c}</h2>
-            <label>Descripción:</label><br>
-            <textarea class="desc" rows="2" maxlength="80">Viga simple sobre fundación elástica</textarea><br><br>
+    for (let i = 1; i <= n; i++) {
+        const div = document.createElement('div');
+        div.className = 'section';
+        div.innerHTML = `
+            <h3>Caso ${i}</h3>
+            <textarea class="desc" placeholder="Descripción (80 caracteres)" style="width:100%;">Viga simple L=10ft</textarea>
 
-            <label>nm (elementos):</label><input type="number" class="nm" value="1" min="1"><br>
-            <label>nn (nudos):</label><input type="number" class="nn" value="2" min="2"><br>
-            <label>na (apoyos):</label><input type="number" class="na" value="2" min="0"><br>
-            <label>nspd:</label><input type="number" class="nspd" value="0"><br>
-            <label>jbw:</label><input type="number" class="jbw" value="6"><br>
-            <label>nca X:</label><input type="number" class="nca1" value="0">
-            <label>nca Y:</label><input type="number" class="nca2" value="0">
-            <label>nca M:</label><input type="number" class="nca3" value="0"><br>
-            <label>E (k/ft²):</label><input type="text" class="ela" value="360000.0"><br><br>
+            <label>nm:</label><input class="nm" value="1">
+            <label>nn:</label><input class="nn" value="2">
+            <label>na:</label><input class="na" value="2">
+            <label>E:</label><input class="E" value="360000.0"><br><br>
 
-            <h3>Elementos</h3>
-            <table class="elemTable">
-                <thead><tr>
-                    <th>Nº</th><th>Ni</th><th>Nj</th><th>Ii</th><th>Area</th><th>L</th>
-                    <th>k₀</th><th>X</th><th>exp</th><th>pa</th><th>pb</th>
-                    <th>Ang</th><th>Ij</th><th>Ic</th><th>H.i</th><th>H.j</
+            <h4>Elementos</h4>
+            <table><thead><tr>
+                <th>#</th><th>Ni</th><th>Nj</th><th>Ii</th><th>A</th><th>L</th><th>k0</th><th>Acc
