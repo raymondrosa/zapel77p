@@ -5,41 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ZAPEL77P - Generador de Input</title>
     <style>
-        body {font-family: Arial; margin: 20px; background: #f4f4f4;}
+        body {font-family: Arial, sans-serif; margin: 20px; background: #f4f4f4;}
+        h1 {text-align: center; color: #0066cc;}
         .section {background: white; padding: 15px; margin: 10px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);}
         input, textarea, button {margin: 5px; padding: 8px; font-size: 14px;}
         table {width: 100%; border-collapse: collapse; margin: 10px 0;}
         th, td {border: 1px solid #ccc; padding: 6px; text-align: center;}
         th {background: #0066cc; color: white;}
-        button {background: #0066cc; color: white; border: none; cursor: pointer; border-radius: 5px;}
+        button {background: #0066cc; color: white; border: none; cursor: pointer; border-radius: 5px; padding: 10px 20px;}
         button:hover {background: #0055aa;}
-        #output {width: 100%; height: 400px; font-family: monospace; padding: 10px; background: #f8f8f8;}
+        #output {width: 100%; height: 400px; font-family: monospace; padding: 10px; background: #f8f8f8; border: 1px solid #ccc;}
         .add {background: #28a745;}
-        .del {background: #dc3545; color: white;}
+        .del {background: #dc3545; color: white; padding: 5px 10px;}
     </style>
 </head>
 <body>
 
-<h1 style="text-align:center; color:#0066cc;">ZAPEL77P - Generador de Input</h1>
+<h1>ZAPEL77P - Generador de Input</h1>
 
 <div class="section">
     <label>Número de casos:</label>
     <input type="number" id="kasos" value="1" min="1">
-    <button onclick="init()">Actualizar Casos</button>
+    <button onclick="initCases()">Actualizar Casos</button>
 </div>
 
-<div id="cases"></div>
+<div id="casesContainer"></div>
 
-<button onclick="generate()" style="font-size:18px; padding:12px 30px;">GENERAR input.txt</button>
-<textarea id="output" placeholder="Aquí aparecerá el input formateado..."></textarea>
-<button onclick="download()">DESCARGAR input.txt</button>
+<button onclick="generateInput()" style="font-size:18px; padding:12px 30px;">GENERAR input.txt</button>
+<textarea id="outputTextarea" placeholder="Aquí aparecerá el input formateado..."></textarea>
+<button onclick="downloadTxt()">DESCARGAR input.txt</button>
 
 <script>
 let cases = [];
 
-function init() {
+// INICIALIZAR AL CARGAR
+window.addEventListener('load', () => {
+    console.log("Página cargada. Inicializando casos...");
+    initCases();
+});
+
+function initCases() {
     const n = parseInt(document.getElementById('kasos').value) || 1;
-    const container = document.getElementById('cases');
+    const container = document.getElementById('casesContainer');
     container.innerHTML = '';
     cases = [];
 
@@ -48,7 +55,7 @@ function init() {
         div.className = 'section';
         div.innerHTML = `
             <h3>Caso ${i}</h3>
-            <textarea class="desc" placeholder="Descripción (80 caracteres)" style="width:100%;">Viga simple L=10ft</textarea>
+            <textarea class="desc" style="width:100%;">Viga simple L=10ft</textarea>
 
             <label>nm:</label><input class="nm" value="1">
             <label>nn:</label><input class="nn" value="2">
@@ -56,131 +63,134 @@ function init() {
             <label>E:</label><input class="E" value="360000.0"><br><br>
 
             <h4>Elementos</h4>
-            <table><thead><tr>
-                <th>#</th><th>Ni</th><th>Nj</th><th>Ii</th><th>A</th><th>L</th><th>k0</th><th>Acción</th>
-            </tr></thead><tbody class="elem"></tbody></table>
-            <button type="button" class="add" onclick="addElem(this)">+ Elemento</button>
+            <table>
+                <thead><tr>
+                    <th>#</th><th>Ni</th><th>Nj</th><th>Ii</th><th>A</th><th>L</th><th>k0</th><th>Acción</th>
+                </tr></thead>
+                <tbody class="elemTbody"></tbody>
+            </table>
+            <button type="button" class="add" onclick="addRow(this, 'elem')">+ Elemento</button>
 
             <h4>Apoyos</h4>
-            <table><thead><tr><th>Nudo</th><th>X</th><th>Y</th><th>Rot</th><th>Acción</th></tr></thead><tbody class="support"></tbody></table>
-            <button type="button" class="add" onclick="addSupport(this)">+ Apoyo</button>
+            <table>
+                <thead><tr><th>Nudo</th><th>X</th><th>Y</th><th>Rot</th><th>Acción</th></tr></thead>
+                <tbody class="supportTbody"></tbody>
+            </table>
+            <button type="button" class="add" onclick="addRow(this, 'support')">+ Apoyo</button>
         `;
-        container.appendChild(div); // AÑADIDO AL DOM
 
-        const elemTbody = div.querySelector('.elem');
-        const supportTbody = div.querySelector('.support');
+        container.appendChild(div);
 
-        // Añadir filas DESPUÉS de insertar en DOM
-        setTimeout(() => {
-            addRow(elemTbody, 'elem', 1, 2, 0.0833, 1.0, 10.0, 100);
-            addRow(supportTbody, 'support', 1, 0, 1, 1);
-            addRow(supportTbody, 'support', 2, 0, 1, 1);
-        }, 0);
+        const elemTbody = div.querySelector('.elemTbody');
+        const supportTbody = div.querySelector('.supportTbody');
+
+        // Añadir filas por defecto
+        addRowToTbody(elemTbody, 'elem', 1, 2, 0.0833, 1.0, 10.0, 100);
+        addRowToTbody(supportTbody, 'support', 1, 0, 1, 1);
+        addRowToTbody(supportTbody, 'support', 2, 0, 1, 1);
 
         cases.push({ div, elemTbody, supportTbody });
     }
+    console.log(`Inicializados ${n} casos`);
 }
 
-function addRow(tbody, type, ...vals) {
-    const tr = tbody.insertRow();
+function addRowToTbody(tbody, type, ...values) {
+    const row = tbody.insertRow();
+    const idx = tbody.rows.length;
+
     if (type === 'elem') {
-        tr.innerHTML = `
-            <td>${tbody.rows.length}</td>
-            <td><input value="${vals[0]}"></td>
-            <td><input value="${vals[1]}"></td>
-            <td><input value="${vals[2]}"></td>
-            <td><input value="${vals[3]}"></td>
-            <td><input value="${vals[4]}"></td>
-            <td><input value="${vals[5]}"></td>
-            <td><button type="button" class="del" onclick="this.parentElement.parentElement.remove(); updateNumbers(tbody)">X</button></td>
+        row.innerHTML = `
+            <td>${idx}</td>
+            <td><input value="${values[0]}"></td>
+            <td><input value="${values[1]}"></td>
+            <td><input value="${values[2]}"></td>
+            <td><input value="${values[3]}"></td>
+            <td><input value="${values[4]}"></td>
+            <td><input value="${values[5]}"></td>
+            <td><button type="button" class="del" onclick="this.parentElement.parentElement.remove()">X</button></td>
         `;
-    } else {
-        tr.innerHTML = `
-            <td><input value="${vals[0]}"></td>
-            <td><input value="${vals[1]}"></td>
-            <td><input value="${vals[2]}"></td>
-            <td><input value="${vals[3]}"></td>
+    } else if (type === 'support') {
+        row.innerHTML = `
+            <td><input value="${values[0]}"></td>
+            <td><input value="${values[1]}"></td>
+            <td><input value="${values[2]}"></td>
+            <td><input value="${values[3]}"></td>
             <td><button type="button" class="del" onclick="this.parentElement.parentElement.remove()">X</button></td>
         `;
     }
 }
 
-function updateNumbers(tbody) {
-    tbody.querySelectorAll('tr').forEach((tr, i) => {
-        tr.cells[0].textContent = i + 1;
-    });
+function addRow(btn, type) {
+    const section = btn.closest('.section');
+    const tbody = section.querySelector(`.${type}Tbody`);
+    const count = tbody.rows.length + 1;
+    if (type === 'elem') {
+        addRowToTbody(tbody, 'elem', count, count + 1, 0.0833, 1.0, 10.0, 100);
+    } else {
+        addRowToTbody(tbody, 'support', count, 0, 1, 1);
+    }
 }
 
-function addElem(btn) {
-    const tbody = btn.closest('.section').querySelector('.elem');
-    const n = tbody.rows.length + 1;
-    addRow(tbody, 'elem', n, n+1, 0.0833, 1.0, 10.0, 100);
-}
-
-function addSupport(btn) {
-    const tbody = btn.closest('.section').querySelector('.support');
-    const n = tbody.rows.length + 1;
-    addRow(tbody, 'support', n, 0, 1, 1);
-}
-
-function generate() {
-    let out = '';
+function generateInput() {
+    let output = '';
     const kasos = parseInt(document.getElementById('kasos').value) || 1;
-    out += kasos.toString().padStart(3) + '\n';
+    output += kasos.toString().padStart(3) + '\n';
+    console.log('Iniciando generación...');
 
     for (const c of cases) {
-        const desc = (c.div.querySelector('.desc').value + ' '.repeat(80)).substring(0,80);
-        for (let i = 0; i < 40; i++) out += desc.substring(i*2, i*2+2);
-        out += '\n';
+        const desc = (c.div.querySelector('.desc').value + ' '.repeat(80)).substring(0, 80);
+        for (let i = 0; i < 40; i++) output += desc.substring(i * 2, i * 2 + 2);
+        output += '\n';
 
         const nm = parseInt(c.div.querySelector('.nm').value);
         const nn = parseInt(c.div.querySelector('.nn').value);
         const na = parseInt(c.div.querySelector('.na').value);
         const E = parseFloat(c.div.querySelector('.E').value).toExponential(4).padStart(11);
 
-        out += [nm, nn, na, 0, 6, 0, 0, 0].map(x => x.toString().padStart(3)).join('') + E + '\n';
+        output += [nm, nn, na, 0, 6, 0, 0, 0].map(v => v.toString().padStart(3)).join('') + E + '\n';
 
-        const elems = c.elemTbody.querySelectorAll('tr');
-        if (elems.length !== nm) {
-            alert(`Error: nm = ${nm}, pero hay ${elems.length} elementos`);
+        const elemRows = c.elemTbody.querySelectorAll('tr');
+        if (elemRows.length !== nm) {
+            alert(`Error: nm = ${nm}, pero hay ${elemRows.length} elementos`);
             return;
         }
 
-        elems.forEach(row => {
-            const inp = row.querySelectorAll('input');
-            out += 
-                inp[0].value.padStart(3) +
-                inp[1].value.padStart(3) +
-                parseFloat(inp[2].value).toFixed(5).padStart(8) +
-                parseFloat(inp[3].value).toFixed(2).padStart(6) +
-                parseFloat(inp[4].value).toFixed(2).padStart(6) +
-                Math.round(inp[5].value).toString().padStart(6) +
+        elemRows.forEach(row => {
+            const inputs = row.querySelectorAll('input');
+            output += 
+                inputs[0].value.padStart(3) +
+                inputs[1].value.padStart(3) +
+                parseFloat(inputs[2].value).toFixed(5).padStart(8) +
+                parseFloat(inputs[3].value).toFixed(2).padStart(6) +
+                parseFloat(inputs[4].value).toFixed(2).padStart(6) +
+                Math.round(parseFloat(inputs[5].value)).toString().padStart(6) +
                 '   0.000   1.000   0.000   0.000   0.00 0.08330 0.08330 0 0\n';
         });
 
         c.supportTbody.querySelectorAll('tr').forEach(row => {
-            const inp = row.querySelectorAll('input');
-            out += ' 1' + inp[0].value.padStart(2) + inp[1].value.padStart(2) + inp[2].value.padStart(2) + inp[3].value.padStart(2) + '\n';
+            const inputs = row.querySelectorAll('input');
+            output += ' 1' + inputs[0].value.padStart(2) + inputs[1].value.padStart(2) + inputs[2].value.padStart(2) + inputs[3].value.padStart(2) + '\n';
         });
 
-        out += '\n';
+        output += '\n';
     }
 
-    document.getElementById('output').value = out.trim();
+    const textarea = document.getElementById('outputTextarea');
+    textarea.value = output.trim();
+    console.log('Input generado:\n', output);
 }
 
-function download() {
-    const text = document.getElementById('output').value;
-    if (!text) return alert('Genera primero');
-    const blob = new Blob([text], {type: 'text/plain'});
+function downloadTxt() {
+    const text = document.getElementById('outputTextarea').value;
+    if (!text) return alert('Genera el input primero');
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
+    a.href = url;
     a.download = 'input.txt';
     a.click();
+    URL.revokeObjectURL(url);
 }
-
-// INICIAR AL CARGAR
-window.onload = init;
 </script>
 
 </body>
