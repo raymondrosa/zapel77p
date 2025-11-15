@@ -6,7 +6,7 @@
     <title>ZAPEL77P - Input CORRECTO</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #0066cc; --success: #28a745; --danger: #dc3545; --light: #f8f9fa; }
+        :root { --primary: #0066cc; --success: #28a745; --danger: #dc3545; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Roboto', sans-serif; background: #f0f4f8; color: #333; padding: 20px; }
         .container { max-width: 1200px; margin: 0 auto; }
@@ -35,7 +35,7 @@
 <body>
 <div class="container">
     <h1>ZAPEL77P - Generador de Input</h1>
-    <p class="subtitle">Formato 100% compatible con ZAPEL77P.FOR • Validado con tu ejemplo</p>
+    <p class="subtitle">Formato 100% compatible • Se muestra en pantalla</p>
 
     <div class="card">
         <div class="form-grid">
@@ -50,17 +50,24 @@
     <textarea id="output" placeholder="Aquí aparecerá el archivo inp.txt listo..."></textarea>
     <button class="btn-success btn-large" onclick="downloadTxt()">DESCARGAR inp.txt</button>
 
-    <div class="footer"><p>Probado con OnlineGDB • Formato exacto Fortran 77</p></div>
+    <div class="footer"><p>Funciona en GitHub Pages • Probado con OnlineGDB</p></div>
 </div>
 
 <script>
+// === ESPERAR A QUE EL DOM ESTÉ LISTO ===
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("DOM cargado. Inicializando...");
+    initCases(); // AHORA SÍ FUNCIONA
+});
+
 let cases = [];
 
-window.onload = () => initCases();
-
 function initCases() {
-    const n = parseInt(document.getElementById('kasos').value) || 1;
+    const kasosInput = document.getElementById('kasos');
+    if (!kasosInput) return console.error("No se encontró #kasos");
+    const n = parseInt(kasosInput.value) || 1;
     const container = document.getElementById('casesContainer');
+    if (!container) return console.error("No se encontró #casesContainer");
     container.innerHTML = '';
     cases = [];
 
@@ -107,15 +114,13 @@ function initCases() {
             loadY: card.querySelector('.loadY')
         };
 
-        // Valores por defecto (tu ejemplo)
+        // Valores por defecto
         addElem(obj.elem, 1, 2, 0.0241, 1.66, 5.00, 0, 0, 0, 0);
         addElem(obj.elem, 2, 3, 0.0241, 1.66, 5.00, 0, 0, 0, 0);
         addElem(obj.elem, 3, 4, 0.0241, 1.66, 10.0, 0, -0.25, -0.25, 0);
-
         addSupport(obj.support, 1, 0, 1, 0);
         addSupport(obj.support, 3, 1, 1, 0);
         addSupport(obj.support, 4, 0, 1, 0);
-
         addLoadY(obj.loadY, 2, 2.47);
 
         cases.push(obj);
@@ -155,12 +160,10 @@ function generateInput() {
     output += kasos.toString().padStart(3) + '\n';
 
     for (const c of cases) {
-        // DESCRIPCIÓN
         const desc = (c.div.querySelector('.desc').value + ' '.repeat(80)).substring(0,80);
         for (let i = 0; i < 40; i++) output += desc.substring(i*2, i*2+2);
         output += '\n';
 
-        // LÍNEA GENERAL
         const vals = ['nm','nn','na','nspd','jbw','nca1','nca2','nca3'].map(cls => {
             const v = parseInt(c.div.querySelector('.'+cls).value) || 0;
             return v.toString().padStart(3);
@@ -169,7 +172,6 @@ function generateInput() {
         const eStr = E.toExponential(4).replace('e', 'E').padStart(11);
         output += vals.join('') + eStr + '\n';
 
-        // ELEMENTOS
         const elemRows = c.elem.querySelectorAll('tr');
         const nm = parseInt(c.div.querySelector('.nm').value);
         if (elemRows.length !== nm) { alert(`nm = ${nm}, pero hay ${elemRows.length} elementos`); return; }
@@ -188,7 +190,6 @@ function generateInput() {
                 parseFloat(i[9].value).toFixed(3).padStart(6) + '\n';
         });
 
-        // APOYOS (grupos de 8)
         const supports = Array.from(c.support.querySelectorAll('tr'));
         for (let i = 0; i < supports.length; i += 8) {
             const g = supports.slice(i, i+8);
@@ -200,7 +201,6 @@ function generateInput() {
             output += '\n';
         }
 
-        // CARGAS Y
         const loads = Array.from(c.loadY.querySelectorAll('tr'));
         for (let i = 0; i < loads.length; i += 7) {
             const g = loads.slice(i, i+7);
@@ -215,12 +215,18 @@ function generateInput() {
         output += '\n';
     }
 
-    document.getElementById('output').value = output.trim();
+    const textarea = document.getElementById('output');
+    if (textarea) {
+        textarea.value = output.trim();
+        console.log("Input generado correctamente");
+    } else {
+        console.error("No se encontró #output");
+    }
 }
 
 function downloadTxt() {
     const text = document.getElementById('output').value;
-    if (!text) return alert('Genera primero');
+    if (!text) return alert('Genera el input primero');
     const blob = new Blob([text], {type: 'text/plain'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
