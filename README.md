@@ -142,7 +142,7 @@ Agilizar el análisis para estudiantes e ingenieros
 👨‍🏫 Autoría
 
 Proyecto desarrollado para el
-Prof. Raymond Rosa Ávila, Ingeniero Estructural y Profesor Universitario.
+Prof. Raymond Rosa Ávila, Asesor Estructural y Profesor Universitario.
 
 Asistencia técnica provista por MisterBot.
 
