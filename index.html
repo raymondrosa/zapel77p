@@ -8,7 +8,7 @@
         body {font-family: Arial; margin: 20px; background: #f4f4f4;}
         h1 {text-align: center; color: #0066cc;}
         .section {background: white; padding: 15px; margin: 15px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);}
-        input, textarea, select, button {margin: 5px; padding: 8px; font-size: 14px;}
+        input, textarea, button {margin: 5px; padding: 8px; font-size: 14px;}
         table {width: 100%; border-collapse: collapse; margin: 10px 0;}
         th, td {border: 1px solid #ccc; padding: 6px; text-align: center;}
         th {background: #0066cc; color: white;}
@@ -21,7 +21,7 @@
 </head>
 <body>
 
-<h1>ZAPEL77P - Generador Input (FORMATO CORRECTO)</h1>
+<h1>ZAPEL77P - Input 100% COMPATIBLE</h1>
 
 <div class="section">
     <label>Número de casos:</label>
@@ -69,7 +69,7 @@ function initCases() {
             </tr></thead><tbody class="elem"></tbody></table>
             <button type="button" class="add" onclick="addRow(this, 'elem')">+ Elemento</button>
 
-            <h4>Apoyos (-1=resorte)</h4>
+            <h4>Apoyos</h4>
             <table><thead><tr><th>Nudo</th><th>X</th><th>Y</th><th>Rot</th><th>X</th></tr></thead><tbody class="support"></tbody></table>
             <button type="button" class="add" onclick="addRow(this, 'support')">+ Apoyo</button>
         `;
@@ -95,7 +95,7 @@ function addElemRow(tbody, ...v) {
     const row = tbody.insertRow();
     row.innerHTML = `
         <td>${tbody.rows.length}</td>
-        ${v.map((val, i) => `<td><input value="${val}"></td>`).join('')}
+        ${v.map(val => `<td><input value="${val}"></td>`).join('')}
         <td><button type="button" class="del" onclick="this.parentElement.parentElement.remove()">X</button></td>
     `;
 }
@@ -124,24 +124,21 @@ function generateInput() {
     output += kasos.toString().padStart(3) + '\n';
 
     for (const c of cases) {
-        // --- DESCRIPCIÓN (40 A2) ---
+        // DESCRIPCIÓN
         const desc = (c.div.querySelector('.desc').value + ' '.repeat(80)).substring(0,80);
-        for (let i = 0; i < 40; i++) {
-            output += desc.substring(i*2, i*2+2);
-        }
+        for (let i = 0; i < 40; i++) output += desc.substring(i*2, i*2+2);
         output += '\n';
 
-        // --- LÍNEA GENERAL (8I3 + E11.4) ---
+        // LÍNEA GENERAL
         const vals = ['nm','nn','na','nspd','jbw','nca1','nca2','nca3'].map(cls => {
             const v = parseInt(c.div.querySelector('.'+cls).value) || 0;
             return v.toString().padStart(3);
         });
         const E = parseFloat(c.div.querySelector('.E').value);
-        const exp = E.toExponential(4); // E11.4
-        const eStr = exp.replace('e', 'E').padStart(11);
+        const eStr = E.toExponential(4).replace('e', 'E').padStart(11);
         output += vals.join('') + eStr + '\n';
 
-        // --- ELEMENTOS (nm líneas) ---
+        // ELEMENTOS
         const elemRows = c.elem.querySelectorAll('tr');
         const nm = parseInt(c.div.querySelector('.nm').value);
         if (elemRows.length !== nm) {
@@ -152,54 +149,28 @@ function generateInput() {
         elemRows.forEach(row => {
             const inp = row.querySelectorAll('input');
             output += 
-                inp[0].value.padStart(3) +   // Ni
-                inp[1].value.padStart(3) +   // Nj
-                parseFloat(inp[2].value).toFixed(5).padStart(8) +  // Ii
-                parseFloat(inp[3].value).toFixed(2).padStart(6) +  // A
-                parseFloat(inp[4].value).toFixed(2).padStart(6) +  // L
-                Math.round(parseFloat(inp[5].value)).toString().padStart(6) + // k0
-                parseFloat(inp[6].value).toFixed(3).padStart(6) +  // X
-                parseFloat(inp[7].value).toFixed(3).padStart(6) +  // exp
-                parseFloat(inp[8].value).toFixed(3).padStart(6) +  // pa
-                parseFloat(inp[9].value).toFixed(3).padStart(6) +  // pb
-                parseFloat(inp[10].value).toFixed(2).padStart(7) + // Ang
-                parseFloat(inp[11].value).toFixed(5).padStart(6) + // Ij
-                parseFloat(inp[12].value).toFixed(5).padStart(6) + // Ic
-                inp[13].value.padStart(1) +  // H.i
+                inp[0].value.padStart(3) +      // Ni
+                inp[1].value.padStart(3) +      // Nj
+                parseFloat(inp[2].value).toFixed(5).padStart(8) +  // Ii (F8.5)
+                parseFloat(inp[3].value).toFixed(2).padStart(6) +  // A (F6.2)
+                parseFloat(inp[4].value).toFixed(2).padStart(6) +  // L (F6.2)
+                Math.round(parseFloat(inp[5].value)).toString().padStart(6) + // k0 (F6.0)
+                parseFloat(inp[6].value).toFixed(3).padStart(6) +  // X (F6.3)
+                parseFloat(inp[7].value).toFixed(3).padStart(6) +  // exp (F6.3)
+                parseFloat(inp[8].value).toFixed(3).padStart(6) +  // pa (F6.3)
+                parseFloat(inp[9].value).toFixed(3).padStart(6) +  // pb (F6.3)
+                parseFloat(inp[10].value).toFixed(2).padStart(7) + // Ang (F7.2)
+                parseFloat(inp[11].value).toFixed(5).padStart(6) + // Ij (F6.5)
+                parseFloat(inp[12].value).toFixed(5).padStart(6) + // Ic (F6.5)
+                inp[13].value.padStart(1) +     // H.i
                 inp[14].value.padStart(1) + '\n'; // H.j
         });
 
-        // --- APOYOS (grupos de 8: nf + 33i2) ---
+        // APOYOS
         const supports = Array.from(c.support.querySelectorAll('tr'));
         for (let i = 0; i < supports.length; i += 8) {
             const group = supports.slice(i, i+8);
             output += group.length.toString().padStart(2);
             group.forEach(row => {
                 const inp = row.querySelectorAll('input');
-                output += inp[0].value.padStart(2) + // Nudo
-                          inp[1].value.padStart(2) + // X
-                          inp[2].value.padStart(2) + // Y
-                          inp[3].value.padStart(2);  // Rot
-            });
-            output += '\n';
-        }
-
-        output += '\n'; // Separador de caso
-    }
-
-    document.getElementById('output').value = output.trim();
-}
-
-function downloadTxt() {
-    const text = document.getElementById('output').value;
-    if (!text) return alert('Genera primero');
-    const blob = new Blob([text], {type: 'text/plain'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'input.txt';
-    a.click();
-}
-</script>
-
-</body>
-</html>
+               
