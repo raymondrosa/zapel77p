@@ -9,7 +9,7 @@
         h1 {text-align: center; color: #0066cc;}
         .section {background: white; padding: 20px; margin: 20px auto; max-width: 1000px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);}
         label {display: inline-block; width: 300px; margin: 8px 0 4px;}
-        input, textarea {width: 250px; padding: 6px;}
+        input, textarea, select {width: 250px; padding: 6px;}
         table {width: 100%; border-collapse: collapse; margin: 10px 0;}
         th, td {border: 1px solid #ccc; padding: 8px; text-align: center;}
         th {background: #0066cc; color: white;}
@@ -17,30 +17,29 @@
         button:hover {background: #0055aa;}
         #outputTextarea {width: 100%; height: 500px; font-family: monospace; background: #f8f8f8; padding: 10px;}
         .removeBtn {background: #cc0000;}
+        .addBtn {background: #28a745; margin: 5px;}
     </style>
 </head>
 <body>
 
-<h1>ZAPEL77P - Generador de Archivo de Entrada</h1>
+<h1>ZAPEL77P - Generador de Archivo de Entrada (CORREGIDO)</h1>
 <p style="text-align:center; max-width:900px; margin:auto;">Wizard completo • Soporta múltiples casos • Formato exacto Fortran 77<br>
-Sube este archivo a GitHub Pages y tendrás tu calculadora online de vigas sobre fundación elástica en minutos.</p>
+Ahora genera el input formateado correctamente. Prueba con valores por defecto y haz clic en "GENERAR".</p>
 
 <div class="section">
     <h2>1. Número de casos</h2>
     <label>Número de casos (kasos):</label>
-    <input type="number" id="kasos" min="1" value="1">
+    <input type="number" id="kasos" min="1" value="1" onchange="updateCases()">
 </div>
 
-<!-- Los casos se generan dinámicamente -->
 <div id="casesContainer"></div>
 
-<button onclick="updateCases()">Actualizar Número de Casos</button>
 <button onclick="generateInput()">GENERAR ARCHIVO input.txt</button>
 <textarea id="outputTextarea" placeholder="Aquí aparecerá el archivo de entrada formateado..." readonly></textarea>
 <button onclick="downloadTxt()">DESCARGAR input.txt</button>
 
 <script>
-// Arreglo de casos (cada caso es un objeto)
+// Arreglo de casos
 let cases = [];
 
 function updateCases() {
@@ -52,284 +51,139 @@ function updateCases() {
     for (let c = 1; c <= kasos; c++) {
         const caseDiv = document.createElement('div');
         caseDiv.className = 'section';
+        caseDiv.id = `case${c}`;
         caseDiv.innerHTML = `
             <h2>Caso ${c}</h2>
             <label>Descripción (máx 80 caracteres):</label><br>
             <textarea class="desc" rows="2" maxlength="80">Caso de prueba ${c}</textarea><br><br>
 
-            <label>nm (elementos):</label><input type="number" class="nm" value="1"><br>
-            <label>nn (nudos):</label><input type="number" class="nn" value="2"><br>
-            <label>na (apoyos/restricc.):</label><input type="number" class="na" value="2"><br>
-            <label>nspd (despl. presc.):</label><input type="number" class="nspd" value="0"><br>
-            <label>jbw (bandwidth ≈ 3×max dif. nudos +3):</label><input type="number" class="jbw" value="6"><br>
-            <label>nca X:</label><input type="number" class="nca1" value="0">
-            <label>nca Y:</label><input type="number" class="nca2" value="0">
-            <label>nca Mom:</label><input type="number" class="nca3" value="0"><br>
-            <label>E (k/ft²):</label><input type="text" class="ela" value="360000."><br><br>
+            <label>nm (elementos):</label><input type="number" class="nm" value="1" min="1"><br>
+            <label>nn (nudos):</label><input type="number" class="nn" value="2" min="2"><br>
+            <label>na (apoyos/restricc.):</label><input type="number" class="na" value="2" min="0"><br>
+            <label>nspd (despl. presc.):</label><input type="number" class="nspd" value="0" min="0"><br>
+            <label>jbw (bandwidth ≈ 3×max dif. nudos +3):</label><input type="number" class="jbw" value="6" min="3"><br>
+            <label>nca X:</label><input type="number" class="nca1" value="0" min="0">
+            <label>nca Y:</label><input type="number" class="nca2" value="0" min="0">
+            <label>nca M (momentos):</label><input type="number" class="nca3" value="0" min="0"><br>
+            <label>E (mod. elasticidad, k/ft²):</label><input type="text" class="ela" value="360000.0"><br><br>
 
-            <h3>Elementos</h3>
+            <h3>Elementos (agrega/editar filas según nm)</h3>
             <table class="elemTable">
                 <thead><tr>
                     <th>Nº</th><th>Ni</th><th>Nj</th><th>Ii (ft⁴)</th><th>Area (ft²)</th><th>L (ft)</th>
                     <th>k₀ (k/ft³)</th><th>X</th><th>exp</th><th>pa (k/ft)</th><th>pb (k/ft)</th>
-                    <th>Ángulo °</th><th>Ij (ft⁴)</th><th>I centro</th><th>Hinge i</th><th>Hinge j</th>
+                    <th>Ángulo °</th><th>Ij (ft⁴)</th><th>I centro (ft⁴)</th><th>Hinge i (0/1)</th><th>Hinge j (0/1)</th><th>Acción</th>
                 </tr></thead>
-                <tbody></tbody>
+                <tbody class="elemTbody"></tbody>
             </table>
-            <button type="button" class="addElemBtn">+ Elemento</button><br><br>
+            <button type="button" class="addBtn" onclick="addElemRow(this)">+ Elemento</button><br><br>
 
-            <h3>Restricciones / Apoyos</h3>
+            <h3>Restricciones / Apoyos (usa -1 para resorte elástico)</h3>
             <table class="supportTable">
-                <thead><tr><th>Nudo</th><th>Rest X</th><th>Rest Y</th><th>Rest Rot Z</th></tr></thead>
-                <tbody></tbody>
+                <thead><tr><th>Nudo</th><th>Rest X (+1=fijo,0=libre,-1=resorte)</th><th>Rest Y</th><th>Rest Rot Z</th><th>Acción</th></tr></thead>
+                <tbody class="supportTbody"></tbody>
             </table>
-            <button type="button" class="addSupportBtn">+ Restricción</button><br><br>
+            <button type="button" class="addBtn" onclick="addSupportRow(this)">+ Restricción</button><br><br>
 
-            <h3>Resortes Elásticos (solo si usaste -1)</h3>
+            <h3>Resortes Elásticos (solo si usaste -1 arriba)</h3>
             <table class="springTable">
-                <thead><tr><th>Nudo</th><th>Dir (1=X,2=Y,3=Rot)</th><th>Valor k (k/ft o k-ft/rad)</th></tr></thead>
-                <tbody></tbody>
+                <thead><tr><th>Nudo</th><th>Dir (1=X,2=Y,3=Rot)</th><th>Valor k (k/ft o k-ft/rad)</th><th>Acción</th></tr></thead>
+                <tbody class="springTbody"></tbody>
             </table>
-            <button type="button" class="addSpringBtn">+ Resorte</button><br><br>
+            <button type="button" class="addBtn" onclick="addSpringRow(this)">+ Resorte</button><br><br>
 
             <h3>Desplazamientos Prescritos</h3>
             <table class="prescTable">
-                <thead><tr><th>Nudo</th><th>Dir (1=X,2=Y,3=Rot)</th><th>Valor (ft o rad)</th></tr></thead>
-                <tbody></tbody>
+                <thead><tr><th>Nudo</th><th>Dir (1=X,2=Y,3=Rot)</th><th>Valor (ft o rad)</th><th>Acción</th></tr></thead>
+                <tbody class="prescTbody"></tbody>
             </table>
-            <button type="button" class="addPrescBtn">+ Despl. Prescrito</button><br><br>
+            <button type="button" class="addBtn" onclick="addPrescRow(this)">+ Despl. Prescrito</button><br><br>
 
             <h3>Cargas Concentradas</h3>
             <table class="loadTable">
-                <thead><tr><th>Tipo</th><th>Nudo</th><th>Valor</th></tr></thead>
-                <tbody></tbody>
+                <thead><tr><th>Tipo (X/Y/Mom)</th><th>Nudo</th><th>Valor (k o k-ft)</th><th>Acción</th></tr></thead>
+                <tbody class="loadTbody"></tbody>
             </table>
-            <button type="button" class="addLoadBtn">+ Carga</button>
+            <button type="button" class="addBtn" onclick="addLoadRow(this)">+ Carga</button>
         `;
         container.appendChild(caseDiv);
         cases.push({
             div: caseDiv,
-            elemTbody: caseDiv.querySelector('.elemTable tbody'),
-            supportTbody: caseDiv.querySelector('.supportTable tbody'),
-            springTbody: caseDiv.querySelector('.springTable tbody'),
-            prescTbody: caseDiv.querySelector('.prescTable tbody'),
-            loadTbody: caseDiv.querySelector('.loadTable tbody')
+            elemTbody: caseDiv.querySelector('.elemTbody'),
+            supportTbody: caseDiv.querySelector('.supportTbody'),
+            springTbody: caseDiv.querySelector('.springTbody'),
+            prescTbody: caseDiv.querySelector('.prescTbody'),
+            loadTbody: caseDiv.querySelector('.loadTbody')
         });
 
-        // Añadir un elemento por defecto
-        addRow(cases[c-1].elemTbody, 'elem', c);
-        addRow(cases[c-1].supportTbody, 'support');
+        // Añadir filas por defecto
+        addElemRow({parentElement: caseDiv}, c);
+        addSupportRow({parentElement: caseDiv});
     }
-
-    // Botones dinámicos
-    document.querySelectorAll('.addElemBtn').forEach(btn => {
-        btn.onclick = () => addRow(btn.parentElement.querySelector('.elemTable tbody'), 'elem');
-    });
-    document.querySelectorAll('.addSupportBtn').forEach(btn => {
-        btn.onclick = () => addRow(btn.parentElement.querySelector('.supportTable tbody'), 'support');
-    });
-    document.querySelectorAll('.addSpringBtn').forEach(btn => {
-        btn.onclick = () => addRow(btn.parentElement.querySelector('.springTable tbody'), 'spring');
-    });
-    document.querySelectorAll('.addPrescBtn').forEach(btn => {
-        btn.onclick = () => addRow(btn.parentElement.querySelector('.prescTable tbody'), 'presc');
-    });
-    document.querySelectorAll('.addLoadBtn').forEach(btn => {
-        btn.onclick = () => addRow(btn.parentElement.querySelector('.loadTable tbody'), 'load');
-    });
 }
 
-function addRow(tbody, type, caseNum = 1) {
+// Funciones para añadir filas
+function addElemRow(btn, caseNum) {
+    const tbody = btn.parentElement.parentElement.querySelector('.elemTbody') || tbody.closest('tbody');
     const row = tbody.insertRow();
-    if (type === 'elem') {
-        row.innerHTML = `
-            <td>${tbody.rows.length}</td>
-            <td><input type="number" value="${tbody.rows.length}"></td>
-            <td><input type="number" value="${tbody.rows.length + 1}"></td>
-            <td><input type="text" value="0.1"></td>
-            <td><input type="text" value="1.0"></td>
-            <td><input type="number" value="20.0"></td>
-            <td><input type="text" value="100.0"></td>
-            <td><input type="text" value="0.0"></td>
-            <td><input type="text" value="1.0"></td>
-            <td><input type="text" value="0.0"></td>
-            <td><input type="text" value="0.0"></td>
-            <td><input type="text" value="0.0"></td>
-            <td><input type="text" value="0.1"></td>
-            <td><input type="text" value="0.1"></td>
-            <td><input type="number" value="0"></td>
-            <td><input type="number" value="0"></td>
-            <td><button type="button" class="removeBtn" onclick="this.parentElement.parentElement.remove()">X</button></td>
-        `;
-    } else if (type === 'support') {
-        row.innerHTML = `
-            <td><input type="number" value="1"></td>
-            <td><input type="number" value="0"></td>
-            <td><input type="number" value="1"></td>
-            <td><input type="number" value="0"></td>
-            <td><button type="button" class="removeBtn" onclick="this.parentElement.parentElement.remove()">X</button></td>
-        `;
-    } else if (type === 'spring') {
-        row.innerHTML = `
-            <td><input type="number" value="1"></td>
-            <td><input type="number" value="2"></td>
-            <td><input type="text" value="500.0"></td>
-            <td><button type="button" class="removeBtn" onclick="this.parentElement.parentElement.remove()">X</button></td>
-        `;
-    } else if (type === 'presc') {
-        row.innerHTML = `
-            <td><input type="number" value="1"></td>
-            <td><input type="number" value="2"></td>
-            <td><input type="text" value="0.01"></td>
-            <td><button type="button" class="removeBtn" onclick="this.parentElement.parentElement.remove()">X</button></td>
-        `;
-    } else if (type === 'load') {
-        row.innerHTML = `
-            <td><select><option>X</option><option selected>Y</option><option>Mom</option></select></td>
-            <td><input type="number" value="1"></td>
-            <td><input type="text" value="-10.0"></td>
-            <td><button type="button" class="removeBtn" onclick="this.parentElement.parentElement.remove()">X</button></td>
-        `;
-    }
+    const numRows = tbody.rows.length;
+    row.innerHTML = `
+        <td>${numRows}</td>
+        <td><input type="number" min="1" value="${numRows}"></td>
+        <td><input type="number" min="1" value="${numRows + 1}"></td>
+        <td><input type="number" step="0.00001" value="0.0833"></td>
+        <td><input type="number" step="0.01" value="1.0"></td>
+        <td><input type="number" step="0.01" value="10.0"></td>
+        <td><input type="number" step="1" value="100.0"></td>
+        <td><input type="number" step="0.001" value="0.0"></td>
+        <td><input type="number" step="0.001" value="1.0"></td>
+        <td><input type="number" step="0.001" value="0.0"></td>
+        <td><input type="number" step="0.001" value="0.0"></td>
+        <td><input type="number" step="0.01" value="0.0"></td>
+        <td><input type="number" step="0.00001" value="0.0833"></td>
+        <td><input type="number" step="0.00001" value="0.0833"></td>
+        <td><input type="number" min="0" max="1" value="0"></td>
+        <td><input type="number" min="0" max="1" value="0"></td>
+        <td><button type="button" class="removeBtn" onclick="this.parentElement.parentElement.remove()">X</button></td>
+    `;
 }
 
-function generateInput() {
-    let output = '';
-    const kasos = parseInt(document.getElementById('kasos').value);
-
-    output += kasos.toString().padStart(3) + '\n';
-
-    document.querySelectorAll('.section').forEach((section, idx) => {
-        if (idx === 0) return; // saltamos la sección del kasos
-
-        // Descripción
-        let desc = section.querySelector('.desc').value.padEnd(80).substring(0,80);
-        for (let i = 0; i < 40; i++) output += desc.substring(i*2, i*2+2);
-        output += '\n';
-
-        // Línea general
-        const nm = parseInt(section.querySelector('.nm').value);
-        const nn = parseInt(section.querySelector('.nn').value);
-        const na = parseInt(section.querySelector('.na').value);
-        const nspd = parseInt(section.querySelector('.nspd').value);
-        const jbw = parseInt(section.querySelector('.jbw').value);
-        const nca1 = parseInt(section.querySelector('.nca1').value);
-        const nca2 = parseInt(section.querySelector('.nca2').value);
-        const nca3 = parseInt(section.querySelector('.nca3').value);
-        const ela = parseFloat(section.querySelector('.ela').value).toExponential(4).padStart(11);
-
-        output += `${nm}`.padStart(3) + `${nn}`.padStart(3) + `${na}`.padStart(3) + `${nspd}`.padStart(3) + `${jbw}`.padStart(3) + `${nca1}`.padStart(3) + `${nca2}`.padStart(3) + `${nca3}`.padStart(3) + ela + '\n';
-
-        // Elementos
-        section.querySelectorAll('.elemTable tbody tr').forEach(row => {
-            const inp = row.querySelectorAll('input');
-            const nom = tbody.rows.length; // o inp[0].value
-            const ni = parseInt(inp[0].value);
-            const nj = parseInt(inp[1].value);
-            const ri = parseFloat(inp[2].value).toFixed(5).padStart(8);
-            const area = parseFloat(inp[3].value).toFixed(2).padStart(6);
-            const rl = parseFloat(inp[4].value).toFixed(2).padStart(6);
-            const rko = parseFloat(inp[5].value).toFixed(0).padStart(6);
-            const x = parseFloat(inp[6].value).toFixed(3).padStart(6);
-            const exp = parseFloat(inp[7].value).toFixed(3).padStart(6);
-            const pa = parseFloat(inp[8].value).toFixed(3).padStart(6);
-            const pb = parseFloat(inp[9].value).toFixed(3).padStart(6);
-            const ang = parseFloat(inp[10].value).toFixed(2).padStart(7);
-            const bi = parseFloat(inp[11].value).toFixed(5).padStart(6);
-            const ci = parseFloat(inp[12].value).toFixed(5).padStart(6);
-            const lrel1 = inp[13].value.padStart(1);
-            const lrel2 = inp[14].value.padStart(1);
-
-            output += nom.toString().padStart(3) + ni.toString().padStart(3) + nj.toString().padStart(3) + ri + area + rl + rko + x + exp + pa + pb + ang + bi + ci + lrel1 + lrel2 + '\n';
-        });
-
-        // === Apoyos / Restricciones ===
-        let supports = [];
-        section.querySelectorAll('.supportTable tbody tr').forEach(row => {
-            const i = row.querySelectorAll('input');
-            supports.push({
-                node: parseInt(i[0].value),
-                kx: parseInt(i[1].value),
-                ky: parseInt(i[2].value),
-                kz: parseInt(i[3].value)
-            });
-        });
-
-        if (supports.length > 0) {
-            const groupSize = 8; // 33i2 ≈ 8 grupos
-            for (let i = 0; i < supports.length; i += groupSize) {
-                let group = supports.slice(i, i + groupSize);
-                output += group.length.toString().padStart(2);
-                group.forEach(s => {
-                    output += s.node.toString().padStart(2) + s.kx.toString().padStart(2) + s.ky.toString().padStart(2) + s.kz.toString().padStart(2);
-                });
-                output += '\n';
-            }
-        }
-
-        // === Resortes y Desplazamientos Prescritos (mismo formato) ===
-        const springRows = section.querySelectorAll('.springTable tbody tr');
-        const prescRows = section.querySelectorAll('.prescTable tbody tr');
-        const extraBlocks = [...springRows, ...prescRows];
-
-        if (extraBlocks.length > 0) {
-            const groupSize = 4;
-            for (let i = 0; i < extraBlocks.length; i += groupSize) {
-                let group = extraBlocks.slice(i, i + groupSize);
-                output += group.length.toString().padStart(2);
-                group.forEach(r => {
-                    let inp = r.querySelectorAll('input');
-                    output += parseInt(inp[0].value).toString().padStart(2) +
-                              parseInt(inp[1].value).toString().padStart(2) +
-                              parseFloat(inp[2].value).toExponential(4).padStart(12);
-                });
-                output += '\n';
-            }
-        }
-
-        // === Cargas concentradas ===
-        let loads = {X: [], Y: [], M: []};
-        section.querySelectorAll('.loadTable tbody tr').forEach(row => {
-            let inp = row.querySelectorAll('input, select');
-            let type = inp[0].value;
-            let node = parseInt(inp[1].value);
-            let val = parseFloat(inp[2].value);
-            if (type === 'X') loads.X.push({node, val});
-            if (type === 'Y') loads.Y.push({node, val});
-            if (type === 'Mom') loads.M.push({node, val});
-        });
-
-        const loadOrder = [loads.X, loads.Y, loads.M];
-        loadOrder.forEach(loadList => {
-            if (loadList.length > 0) {
-                const groupSize = 7; // format(i2,7(i2,f7.2))
-                for (let i = 0; i < loadList.length; i += groupSize) {
-                    let group = loadList.slice(i, i + groupSize);
-                    output += group.length.toString().padStart(2);
-                    group.forEach(l => {
-                        output += l.node.toString().padStart(2) + l.val.toFixed(2).padStart(7);
-                    });
-                    output += '\n';
-                }
-            }
-        });
-    });
-
-    document.getElementById('outputTextarea').value = output;
+function addSupportRow(btn) {
+    const tbody = btn.parentElement.parentElement.querySelector('.supportTbody');
+    const row = tbody.insertRow();
+    row.innerHTML = `
+        <td><input type="number" min="1" value="1"></td>
+        <td><input type="number" value="1" min="-1" max="1"></td>
+        <td><input type="number" value="1" min="-1" max="1"></td>
+        <td><input type="number" value="1" min="-1" max="1"></td>
+        <td><button type="button" class="removeBtn" onclick="this.parentElement.parentElement.remove()">X</button></td>
+    `;
 }
 
-function downloadTxt() {
-    const text = document.getElementById('outputTextarea').value;
-    const blob = new Blob([text], {type: 'text/plain'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'input.txt';
-    a.click();
+function addSpringRow(btn) {
+    const tbody = btn.parentElement.parentElement.querySelector('.springTbody');
+    const row = tbody.insertRow();
+    row.innerHTML = `
+        <td><input type="number" min="1" value="1"></td>
+        <td><input type="number" min="1" max="3" value="2"></td>
+        <td><input type="number" step="1" value="500.0"></td>
+        <td><button type="button" class="removeBtn" onclick="this.parentElement.parentElement.remove()">X</button></td>
+    `;
 }
 
-// Inicializar con 1 caso
-updateCases();
-</script>
-</body>
-</html>
+function addPrescRow(btn) {
+    const tbody = btn.parentElement.parentElement.querySelector('.prescTbody');
+    const row = tbody.insertRow();
+    row.innerHTML = `
+        <td><input type="number" min="1" value="1"></td>
+        <td><input type="number" min="1" max="3" value="2"></td>
+        <td><input type="number" step="0.0001" value="0.0"></td>
+        <td><button type="button" class="removeBtn" onclick="this.parentElement.parentElement.remove()">X</button></td>
+    `;
+}
+
+function addLoadRow(btn) {
+    const tbody = btn.parentElement.parentElement.querySelector('.loadTbody');
+    const row = tbody.insertRow();
+    row.innerHTML = `
+        <td><select><option>X</option>
