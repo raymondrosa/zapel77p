@@ -2,12 +2,153 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>ZAPEL77P Web Wizard</title>
+  <title>ZAPEL77P Web Wizard v2</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h1>ZAPEL77P Web Wizard v2</h1>
-  <p>Versión actualizada. Inserte aquí el contenido completo del wizard final.</p>
+  <main class="container">
+    <h1>ZAPEL77P Web Wizard v2</h1>
+    <p class="subtitle">
+      Generador gráfico de archivos de entrada para ZAPEL77P (formato que ya corre).
+    </p>
+
+    <!-- 1. Datos generales -->
+    <section>
+      <h2>1. Datos generales</h2>
+      <div class="grid">
+        <label>Descripción del caso (título)
+          <input id="desc" maxlength="80" placeholder="Caso 2 - Acera Proyecto Vega Baja">
+        </label>
+
+        <label>Módulo de elasticidad (Ela)
+          <input id="ela" type="number" step="any" value="519120.0">
+        </label>
+
+        <label>Ancho de banda jbw (opcional)
+          <input id="jbw" type="number" min="3" placeholder="Si lo dejas vacío se calcula">
+        </label>
+      </div>
+      <p class="hint">
+        El número de elementos (nm), nodos totales (nn), nodos con apoyo (na) y número de cargas en Y (nca2)
+        se calculan automáticamente a partir de las tablas de elementos, apoyos y cargas.
+      </p>
+    </section>
+
+    <!-- 2. Elementos -->
+    <section>
+      <h2>2. Elementos</h2>
+      <p>
+        Define cada elemento con sus propiedades. El formato que se genera es:
+        <code>mem  ni  nj   I  A  L  [pa  pb]</code><br>
+        Los elementos sin carga distribuida se escriben sin <code>pa</code> y <code>pb</code>, como en tu archivo exitoso.
+      </p>
+
+      <button id="btn-add-element" type="button">Añadir elemento</button>
+
+      <table id="elements-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>ni</th>
+            <th>nj</th>
+            <th>I (ft⁴)</th>
+            <th>Área (ft²)</th>
+            <th>L (ft)</th>
+            <th>pa (kip/ft)</th>
+            <th>pb (kip/ft)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <p class="hint">
+        Ejemplo acera Vega Baja:
+        <br>Elem 1: ni=1, nj=2, I=0.0241, A=1.66, L=5.00, pa=0, pb=0 (no se imprimen pa/pb)
+        <br>Elem 2: ni=2, nj=3, I=0.0241, A=1.66, L=5.00, pa=0, pb=0
+        <br>Elem 3: ni=3, nj=4, I=0.0241, A=1.66, L=10.00, pa=-0.25, pb=-0.25 (sí se imprimen)
+      </p>
+    </section>
+
+    <!-- 3. Soportes -->
+    <section>
+      <h2>3. Soportes (apoyos)</h2>
+      <p>
+        En esta versión de ZAPEL los apoyos van en una sola línea:
+        <code>na  nodo kx ky kr  nodo kx ky kr ...</code>
+      </p>
+
+      <button id="btn-add-support" type="button">Añadir nodo con apoyo</button>
+
+      <table id="supports-table">
+        <thead>
+          <tr>
+            <th>Nodo</th>
+            <th>kx</th>
+            <th>ky</th>
+            <th>kr</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <p class="hint">
+        Usa 0 = libre, 1 = fijo. Ejemplo de la acera:
+        nodo 1: (0,1,0), nodo 3: (1,1,0), nodo 4: (0,1,0).
+      </p>
+    </section>
+
+    <!-- 4. Cargas en Y -->
+    <section>
+      <h2>4. Cargas nodales en Y</h2>
+      <p>
+        El formato que se genera es:
+        <code>nca2  nodo Fy</code>.
+        En tu ejemplo: <code>1  2   -2.47</code>.
+      </p>
+
+      <button id="btn-add-fy" type="button">Añadir carga en Y</button>
+
+      <table id="fy-table">
+        <thead>
+          <tr>
+            <th>Nodo</th>
+            <th>Fy (kips)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- 5. Vista gráfica -->
+    <section>
+      <h2>5. Vista gráfica del modelo</h2>
+      <p class="hint">
+        Vista esquemática en 2D de la viga: nodos, elementos, apoyos y cargas en Y.
+        No está a escala, pero respeta el orden de los nodos.
+      </p>
+      <canvas id="modelCanvas" width="800" height="220"
+              style="border:1px solid #ddd; border-radius:8px; background:#ffffff;"></canvas>
+    </section>
+
+    <!-- 6. Generar archivo -->
+    <section>
+      <h2>6. Generar archivo .txt</h2>
+
+      <label>Nombre del archivo .txt
+        <input id="filename" value="acera.txt">
+      </label>
+
+      <button id="btn-generate" type="button" class="primary">
+        Generar y descargar archivo .txt
+      </button>
+
+      <pre id="preview" class="preview"></pre>
+    </section>
+  </main>
+
   <script src="app.js"></script>
 </body>
 </html>
