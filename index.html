@@ -1,252 +1,160 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZAPEL77P - Input GENERADO</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-        :root { --primary: #0066cc; --success: #28a745; --danger: #dc3545; }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Roboto', sans-serif; background: #f0f4f8; color: #333; padding: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        h1 { text-align: center; color: var(--primary); margin-bottom: 10px; }
-        .subtitle { text-align: center; color: #555; margin-bottom: 30px; }
-        .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 6px 16px rgba(0,0,0,0.1); }
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-bottom: 15px; }
-        label { display: block; font-weight: 500; margin-bottom: 5px; }
-        input, textarea, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
-        input:focus, textarea:focus { outline: none; border-color: var(--primary); }
-        button { padding: 10px 20px; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; transition: all 0.3s; }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { background: #0055aa; }
-        .btn-success { background: var(--success); color: white; }
-        .btn-danger { background: var(--danger); color: white; padding: 5px 10px; font-size: 12px; }
-        .btn-large { font-size: 18px; padding: 14px 32px; width: 100%; margin: 20px 0; font-weight: 600; }
-        table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 13px; }
-        th { background: var(--primary); color: white; padding: 10px; text-align: center; }
-        td { padding: 6px; text-align: center; border-bottom: 1px solid #eee; }
-        td input, td select { font-size: 12px; padding: 6px; }
-        .section-title { background: var(--primary); color: white; padding: 10px 15px; border-radius: 6px; margin: 20px 0 10px; font-size: 1.1em; }
-        #output { width: 100%; height: 500px; font-family: 'Courier New', monospace; font-size: 13px; padding: 15px; background: #f8f8f8; border: 1px solid #ddd; border-radius: 6px; resize: vertical; }
-        .footer { text-align: center; margin-top: 40px; color: #666; font-size: 0.9em; }
-    </style>
+  <meta charset="UTF-8">
+  <title>ZAPEL77P Web Wizard v3</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<div class="container">
-    <h1>ZAPEL77P - Generador de Input</h1>
-    <p class="subtitle">Formato 100% compatible • SE MUESTRA AL INSTANTE</p>
+  <main class="container">
+    <h1>ZAPEL77P Web Wizard v3</h1>
+    <p class="subtitle">
+      Generador gráfico de archivos de entrada para ZAPEL77P<br>
+      Formato compatible con el caso exitoso (Caso 2 - Acera Proyecto Vega Baja).
+    </p>
 
-    <div class="card">
-        <div class="form-grid">
-            <div><label>Número de casos:</label><input type="number" id="kasos" value="1" min="1"></div>
-            <div style="display:flex; align-items:end;">
-                <button class="btn-primary" onclick="initCases()">Actualizar Casos</button>
-            </div>
-        </div>
-    </div>
+    <section class="toolbar">
+      <button id="btn-load-example" type="button">Cargar ejemplo: Acera Vega Baja</button>
+    </section>
 
-    <div id="casesContainer"></div>
+    <!-- 1. Datos generales -->
+    <section>
+      <h2>1. Datos generales</h2>
+      <div class="grid">
+        <label>Descripción del caso (título)
+          <input id="desc" maxlength="80" placeholder="Caso 2 - Acera Proyecto Vega Baja">
+        </label>
 
-    <button class="btn-primary btn-large" onclick="generateInput()">GENERAR inp.txt</button>
-    <textarea id="output" placeholder="Aquí aparecerá el archivo inp.txt listo..."></textarea>
-    <button class="btn-success btn-large" onclick="downloadTxt()">DESCARGAR inp.txt</button>
+        <label>Módulo de elasticidad (Ela)
+          <input id="ela" type="number" step="any" value="519120.0">
+        </label>
 
-    <div class="footer"><p>Funciona en GitHub Pages • Probado con OnlineGDB</p></div>
-</div>
+        <label>Ancho de banda jbw (opcional)
+          <input id="jbw" type="number" min="3" placeholder="Si lo dejas vacío se calcula automáticamente">
+        </label>
+      </div>
+      <p class="hint">
+        El número de elementos (nm), nodos totales (nn), nodos con apoyo (na) y número de cargas en Y (nca2)
+        se calculan automáticamente a partir de las tablas.
+      </p>
+    </section>
 
-<script>
-let cases = [];
+    <!-- 2. Elementos -->
+    <section>
+      <h2>2. Elementos</h2>
+      <p>
+        Cada fila define un elemento. El formato generado es:
+        <code>mem  ni  nj   I  A  L  [pa  pb]</code><br>
+        Si <code>pa</code> y <code>pb</code> son 0, no se imprimen (como en tu archivo exitoso).
+      </p>
 
-// INICIALIZAR AL CARGAR
-document.addEventListener('DOMContentLoaded', () => {
-    initCases(); // Carga con 1 caso por defecto
-});
+      <button id="btn-add-element" type="button">Añadir elemento</button>
 
-function initCases() {
-    const n = parseInt(document.getElementById('kasos').value) || 1;
-    const container = document.getElementById('casesContainer');
-    container.innerHTML = '';
-    cases = []; // Reinicia
+      <table id="elements-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>ni</th>
+            <th>nj</th>
+            <th>I (ft⁴)</th>
+            <th>Área (ft²)</th>
+            <th>L (ft)</th>
+            <th>pa (kip/ft)</th>
+            <th>pb (kip/ft)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
 
-    for (let i = 1; i <= n; i++) {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-            <h3 class="section-title">Caso ${i}</h3>
-            <textarea class="desc" style="width:100%; height:60px;">Caso ${i} - Acera Proyecto Vega Baja</textarea>
+      <p class="hint">
+        Ejemplo acera Vega Baja:
+        <br>Elem 1: ni=1, nj=2, I=0.0241, A=1.66, L=5.00, pa=0, pb=0
+        <br>Elem 2: ni=2, nj=3, I=0.0241, A=1.66, L=5.00, pa=0, pb=0
+        <br>Elem 3: ni=3, nj=4, I=0.0241, A=1.66, L=10.00, pa=-0.25, pb=-0.25
+      </p>
+    </section>
 
-            <div class="form-grid">
-                <div><label>nm</label><input class="nm" value="3"></div>
-                <div><label>nn</label><input class="nn" value="4"></div>
-                <div><label>na</label><input class="na" value="3"></div>
-                <div><label>nspd</label><input class="nspd" value="0"></div>
-                <div><label>jbw</label><input class="jbw" value="6"></div>
-                <div><label>nca X</label><input class="nca1" value="0"></div>
-                <div><label>nca Y</label><input class="nca2" value="1"></div>
-                <div><label>nca M</label><input class="nca3" value="0"></div>
-                <div><label>E</label><input class="E" value="519120.0"></div>
-            </div>
+    <!-- 3. Soportes -->
+    <section>
+      <h2>3. Soportes (apoyos)</h2>
+      <p>
+        En tu versión de ZAPEL, los apoyos van en una sola línea:
+        <code>na  nodo kx ky kr  nodo kx ky kr ...</code><br>
+        Por ejemplo:
+        <code>3 1 0 1 0 3 1 1 0 4 0 1 0</code>
+      </p>
 
-            <h4 class="section-title">Elementos</h4>
-            <table><thead><tr>
-                <th>#</th><th>Ni</th><th>Nj</th><th>Ii</th><th>A</th><th>L</th><th>k₀</th><th>exp</th><th>pa</th><th>pb</th>
-            </tr></thead><tbody class="elem"></tbody></table>
-            <button class="btn-success" onclick="addRow(this,'elem')">+ Elemento</button>
+      <button id="btn-add-support" type="button">Añadir nodo con apoyo</button>
 
-            <h4 class="section-title">Apoyos</h4>
-            <table><thead><tr><th>Nudo</th><th>X</th><th>Y</th><th>Rot</th></tr></thead><tbody class="support"></tbody></table>
-            <button class="btn-success" onclick="addRow(this,'support')">+ Apoyo</button>
+      <table id="supports-table">
+        <thead>
+          <tr>
+            <th>Nodo</th>
+            <th>kx</th>
+            <th>ky</th>
+            <th>kr</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
 
-            <h4 class="section-title">Cargas Y</h4>
-            <table><thead><tr><th>Nudo</th><th>Valor</th></tr></thead><tbody class="loadY"></tbody></table>
-            <button class="btn-success" onclick="addRow(this,'loadY')">+ Carga Y</button>
-        `;
+      <p class="hint">
+        Usa 0 = libre, 1 = fijo. Ejemplo de la acera:
+        nodo 1: (0,1,0), nodo 3: (1,1,0), nodo 4: (0,1,0).
+      </p>
+    </section>
 
-        container.appendChild(card);
+    <!-- 4. Cargas en Y -->
+    <section>
+      <h2>4. Cargas nodales en Y</h2>
+      <p>
+        El formato generado es:
+        <code>nca2  nodo Fy  [nodo Fy ...]</code><br>
+        Ejemplo: <code>1 2   -2.47</code>.
+      </p>
 
-        const obj = {
-            div: card,
-            elem: card.querySelector('.elem'),
-            support: card.querySelector('.support'),
-            loadY: card.querySelector('.loadY')
-        };
+      <button id="btn-add-fy" type="button">Añadir carga en Y</button>
 
-        // TU EJEMPLO
-        addElem(obj.elem, 1, 2, 0.0241, 1.66, 5.00, 0, 0, 0, 0);
-        addElem(obj.elem, 2, 3, 0.0241, 1.66, 5.00, 0, 0, 0, 0);
-        addElem(obj.elem, 3, 4, 0.0241, 1.66, 10.0, 0, -0.25, -0.25, 0);
-        addSupport(obj.support, 1, 0, 1, 0);
-        addSupport(obj.support, 3, 1, 1, 0);
-        addSupport(obj.support, 4, 0, 1, 0);
-        addLoadY(obj.loadY, 2, 2.47);
+      <table id="fy-table">
+        <thead>
+          <tr>
+            <th>Nodo</th>
+            <th>Fy (kips)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
 
-        cases.push(obj);
-    }
-}
+    <!-- 5. Vista gráfica -->
+    <section>
+      <h2>5. Vista gráfica del modelo</h2>
+      <p class="hint">
+        Vista esquemática de la viga: nodos, elementos, apoyos y cargas nodales en Y.
+      </p>
+      <canvas id="modelCanvas" width="800" height="220"
+              style="border:1px solid #ddd; border-radius:8px; background:#ffffff;"></canvas>
+    </section>
 
-function addElem(tbody, ...v) {
-    const row = tbody.insertRow();
-    row.innerHTML = `<td>${tbody.rows.length}</td>` + v.map(val => `<td><input value="${val}"></td>`).join('') +
-        `<td><button class="btn-danger" onclick="this.parentElement.parentElement.remove(); updateCounts(this)">X</button></td>`;
-}
+    <!-- 6. Generar archivo -->
+    <section>
+      <h2>6. Generar archivo .txt</h2>
 
-function addSupport(tbody, ...v) {
-    const row = tbody.insertRow();
-    row.innerHTML = v.map(val => `<td><input value="${val}"></td>`).join('') +
-        `<td><button class="btn-danger" onclick="this.parentElement.parentElement.remove(); updateCounts(this)">X</button></td>`;
-}
+      <label>Nombre del archivo .txt
+        <input id="filename" value="acera.txt">
+      </label>
 
-function addLoadY(tbody, nudo, valor) {
-    const row = tbody.insertRow();
-    row.innerHTML = `<td><input value="${nudo}"></td><td><input value="${valor}"></td>` +
-        `<td><button class="btn-danger" onclick="this.parentElement.parentElement.remove(); updateCounts(this)">X</button></td>`;
-}
+      <button id="btn-generate" type="button" class="primary">
+        Generar y descargar archivo .txt
+      </button>
 
-function addRow(btn, type) {
-    const section = btn.closest('.card');
-    const tbody = section.querySelector('.' + type);
-    const n = tbody.rows.length + 1;
-    if (type === 'elem') addElem(tbody, n, n+1, 0.0241, 1.66, 5.0, 0, 0, 0, 0);
-    else if (type === 'support') addSupport(tbody, n, 0, 1, 0);
-    else if (type === 'loadY') addLoadY(tbody, 1, 0.0);
-    updateCounts(btn);
-}
+      <pre id="preview" class="preview"></pre>
+    </section>
+  </main>
 
-function updateCounts(btn) {
-    const card = btn.closest('.card');
-    const nm = card.querySelector('.nm');
-    const na = card.querySelector('.na');
-    const nca2 = card.querySelector('.nca2');
-    if (nm) nm.value = card.querySelectorAll('.elem tr').length;
-    if (na) na.value = card.querySelectorAll('.support tr').length;
-    if (nca2) nca2.value = card.querySelectorAll('.loadY tr').length;
-}
-
-function generateInput() {
-    if (cases.length === 0) {
-        alert("No hay casos. Haz clic en 'Actualizar Casos' primero.");
-        return;
-    }
-
-    let output = '';
-    const kasos = parseInt(document.getElementById('kasos').value) || 1;
-    output += kasos.toString().padStart(3) + '\n';
-
-    for (const c of cases) {
-        // DESCRIPCIÓN
-        const desc = (c.div.querySelector('.desc').value + ' '.repeat(80)).substring(0,80);
-        for (let i = 0; i < 40; i++) output += desc.substring(i*2, i*2+2);
-        output += '\n';
-
-        // LÍNEA GENERAL
-        const vals = ['nm','nn','na','nspd','jbw','nca1','nca2','nca3'].map(cls => {
-            const v = parseInt(c.div.querySelector('.'+cls).value) || 0;
-            return v.toString().padStart(3);
-        });
-        const E = parseFloat(c.div.querySelector('.E').value);
-        const eStr = E.toExponential(4).replace('e', 'E').padStart(11);
-        output += vals.join('') + eStr + '\n';
-
-        // ELEMENTOS
-        const elemRows = c.elem.querySelectorAll('tr');
-        elemRows.forEach(row => {
-            const i = row.querySelectorAll('input');
-            output += 
-                i[0].value.padStart(3) +
-                i[1].value.padStart(3) +
-                parseFloat(i[2].value).toFixed(4).padStart(8) +
-                parseFloat(i[3].value).toFixed(2).padStart(6) +
-                parseFloat(i[4].value).toFixed(2).padStart(6) +
-                Math.round(parseFloat(i[5].value)).toString().padStart(6) +
-                parseFloat(i[6].value).toFixed(3).padStart(6) +
-                parseFloat(i[7].value).toFixed(3).padStart(6) +
-                parseFloat(i[8].value).toFixed(3).padStart(6) +
-                parseFloat(i[9].value).toFixed(3).padStart(6) + '\n';
-        });
-
-        // APOYOS
-        const supports = Array.from(c.support.querySelectorAll('tr'));
-        for (let i = 0; i < supports.length; i += 8) {
-            const g = supports.slice(i, i+8);
-            output += g.length.toString().padStart(2);
-            g.forEach(r => {
-                const inp = r.querySelectorAll('input');
-                output += inp[0].value.padStart(2) + inp[1].value.padStart(2) + inp[2].value.padStart(2) + inp[3].value.padStart(2);
-            });
-            output += '\n';
-        }
-
-        // CARGAS Y
-        const loads = Array.from(c.loadY.querySelectorAll('tr'));
-        for (let i = 0; i < loads.length; i += 7) {
-            const g = loads.slice(i, i+7);
-            output += g.length.toString().padStart(2);
-            g.forEach(r => {
-                const inp = r.querySelectorAll('input');
-                output += ' 2' + inp[0].value.padStart(2) + parseFloat(inp[1].value).toFixed(2).padStart(7);
-            });
-            output += '\n';
-        }
-
-        output += '\n';
-    }
-
-    const textarea = document.getElementById('output');
-    textarea.value = output.trim();
-    textarea.scrollTop = 0;
-    console.log("INPUT GENERADO:", output);
-}
-
-function downloadTxt() {
-    const text = document.getElementById('output').value;
-    if (!text) return alert('Primero genera el input');
-    const blob = new Blob([text], {type: 'text/plain'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'inp.txt';
-    a.click();
-}
-</script>
+  <script src="app.js"></script>
 </body>
 </html>
