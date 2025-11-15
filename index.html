@@ -35,7 +35,7 @@
 <body>
 <div class="container">
     <h1>ZAPEL77P - Generador de Input</h1>
-    <p class="subtitle">Formato 100% compatible • Se muestra en pantalla</p>
+    <p class="subtitle">Formato 100% compatible • Se muestra al instante</p>
 
     <div class="card">
         <div class="form-grid">
@@ -54,20 +54,18 @@
 </div>
 
 <script>
-// === ESPERAR A QUE EL DOM ESTÉ LISTO ===
-document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM cargado. Inicializando...");
-    initCases(); // AHORA SÍ FUNCIONA
-});
-
 let cases = [];
+
+// INICIALIZAR AL CARGAR COMPLETO
+document.addEventListener('DOMContentLoaded', () => {
+    initCases(); // AHORA SÍ
+});
 
 function initCases() {
     const kasosInput = document.getElementById('kasos');
-    if (!kasosInput) return console.error("No se encontró #kasos");
+    if (!kasosInput) return;
     const n = parseInt(kasosInput.value) || 1;
     const container = document.getElementById('casesContainer');
-    if (!container) return console.error("No se encontró #casesContainer");
     container.innerHTML = '';
     cases = [];
 
@@ -114,7 +112,7 @@ function initCases() {
             loadY: card.querySelector('.loadY')
         };
 
-        // Valores por defecto
+        // DATOS DE TU EJEMPLO
         addElem(obj.elem, 1, 2, 0.0241, 1.66, 5.00, 0, 0, 0, 0);
         addElem(obj.elem, 2, 3, 0.0241, 1.66, 5.00, 0, 0, 0, 0);
         addElem(obj.elem, 3, 4, 0.0241, 1.66, 10.0, 0, -0.25, -0.25, 0);
@@ -155,6 +153,11 @@ function addRow(btn, type) {
 }
 
 function generateInput() {
+    if (cases.length === 0) {
+        alert("Primero actualiza los casos");
+        return;
+    }
+
     let output = '';
     const kasos = parseInt(document.getElementById('kasos').value) || 1;
     output += kasos.toString().padStart(3) + '\n';
@@ -216,12 +219,8 @@ function generateInput() {
     }
 
     const textarea = document.getElementById('output');
-    if (textarea) {
-        textarea.value = output.trim();
-        console.log("Input generado correctamente");
-    } else {
-        console.error("No se encontró #output");
-    }
+    textarea.value = output.trim();
+    textarea.scrollTop = 0;
 }
 
 function downloadTxt() {
