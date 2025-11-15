@@ -1,0 +1,1 @@
+// JS del wizard (versión placeholder).
