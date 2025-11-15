@@ -3,28 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZAPEL77P - Generador de Input</title>
+    <title>ZAPEL77P - Generador Input COMPLETO</title>
     <style>
         body {font-family: Arial, sans-serif; margin: 20px; background: #f4f4f4;}
         h1 {text-align: center; color: #0066cc;}
-        .section {background: white; padding: 15px; margin: 10px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);}
-        input, textarea, button {margin: 5px; padding: 8px; font-size: 14px;}
+        .section {background: white; padding: 15px; margin: 15px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);}
+        input, textarea, select, button {margin: 5px; padding: 8px; font-size: 14px;}
         table {width: 100%; border-collapse: collapse; margin: 10px 0;}
         th, td {border: 1px solid #ccc; padding: 6px; text-align: center;}
         th {background: #0066cc; color: white;}
         button {background: #0066cc; color: white; border: none; cursor: pointer; border-radius: 5px; padding: 10px 20px;}
         button:hover {background: #0055aa;}
-        #output {width: 100%; height: 400px; font-family: monospace; padding: 10px; background: #f8f8f8; border: 1px solid #ccc;}
+        #output {width: 100%; height: 500px; font-family: monospace; padding: 10px; background: #f8f8f8; border: 1px solid #ccc;}
         .add {background: #28a745;}
         .del {background: #dc3545; color: white; padding: 5px 10px;}
+        .small {font-size: 12px; color: #666;}
     </style>
 </head>
 <body>
 
-<h1>ZAPEL77P - Generador de Input</h1>
+<h1>ZAPEL77P - Generador Input COMPLETO</h1>
+<p style="text-align:center;">Formato exacto Fortran 77 • Todas las variables • Validaciones</p>
 
 <div class="section">
-    <label>Número de casos:</label>
+    <label>Número de casos (kasos):</label>
     <input type="number" id="kasos" value="1" min="1">
     <button onclick="initCases()">Actualizar Casos</button>
 </div>
@@ -32,17 +34,13 @@
 <div id="casesContainer"></div>
 
 <button onclick="generateInput()" style="font-size:18px; padding:12px 30px;">GENERAR input.txt</button>
-<textarea id="outputTextarea" placeholder="Aquí aparecerá el input formateado..."></textarea>
+<textarea id="output" placeholder="Aquí aparecerá el input formateado..."></textarea>
 <button onclick="downloadTxt()">DESCARGAR input.txt</button>
 
 <script>
 let cases = [];
 
-// INICIALIZAR AL CARGAR
-window.addEventListener('load', () => {
-    console.log("Página cargada. Inicializando casos...");
-    initCases();
-});
+window.addEventListener('load', () => initCases());
 
 function initCases() {
     const n = parseInt(document.getElementById('kasos').value) || 1;
@@ -55,79 +53,123 @@ function initCases() {
         div.className = 'section';
         div.innerHTML = `
             <h3>Caso ${i}</h3>
-            <textarea class="desc" style="width:100%;">Viga simple L=10ft</textarea>
+            <textarea class="desc" style="width:100%;">Caso ${i} - Viga sobre fundación elástica</textarea>
 
-            <label>nm:</label><input class="nm" value="1">
-            <label>nn:</label><input class="nn" value="2">
-            <label>na:</label><input class="na" value="2">
-            <label>E:</label><input class="E" value="360000.0"><br><br>
+            <label>nm (elementos):</label><input class="nm" value="1">
+            <label>nn (nudos):</label><input class="nn" value="2">
+            <label>na (apoyos):</label><input class="na" value="2">
+            <label>nspd (despl. presc.):</label><input class="nspd" value="0">
+            <label>jbw (bandwidth):</label><input class="jbw" value="6">
+            <label>nca X:</label><input class="nca1" value="0">
+            <label>nca Y:</label><input class="nca2" value="0">
+            <label>nca M:</label><input class="nca3" value="0">
+            <label>E (k/ft²):</label><input class="E" value="360000.0"><br><br>
 
-            <h4>Elementos</h4>
+            <h4>Elementos (nm filas)</h4>
             <table>
                 <thead><tr>
-                    <th>#</th><th>Ni</th><th>Nj</th><th>Ii</th><th>A</th><th>L</th><th>k0</th><th>Acción</th>
+                    <th>#</th><th>Ni</th><th>Nj</th><th>Ii (ft⁴)</th><th>Area (ft²)</th><th>L (ft)</th>
+                    <th>k₀ (k/ft³)</th><th>X</th><th>exp</th><th>pa</th><th>pb</th>
+                    <th>Ángulo °</th><th>Ij</th><th>Ic</th><th>H.i</th><th>H.j</th><th>X</th>
                 </tr></thead>
                 <tbody class="elemTbody"></tbody>
             </table>
             <button type="button" class="add" onclick="addRow(this, 'elem')">+ Elemento</button>
 
-            <h4>Apoyos</h4>
+            <h4>Apoyos (usa -1 para resorte)</h4>
             <table>
-                <thead><tr><th>Nudo</th><th>X</th><th>Y</th><th>Rot</th><th>Acción</th></tr></thead>
+                <thead><tr><th>Nudo</th><th>X</th><th>Y</th><th>Rot Z</th><th>X</th></tr></thead>
                 <tbody class="supportTbody"></tbody>
             </table>
             <button type="button" class="add" onclick="addRow(this, 'support')">+ Apoyo</button>
+
+            <h4>Resortes Elásticos (-1 en apoyo)</h4>
+            <table>
+                <thead><tr><th>Nudo</th><th>Dir</th><th>Valor k</th><th>X</th></tr></thead>
+                <tbody class="springTbody"></tbody>
+            </table>
+            <button type="button" class="add" onclick="addRow(this, 'spring')">+ Resorte</button>
+
+            <h4>Desplazamientos Prescritos</h4>
+            <table>
+                <thead><tr><th>Nudo</th><th>Dir</th><th>Valor</th><th>X</th></tr></thead>
+                <tbody class="prescTbody"></tbody>
+            </table>
+            <button type="button" class="add" onclick="addRow(this, 'presc')">+ Despl. Presc.</button>
+
+            <h4>Cargas Concentradas</h4>
+            <table>
+                <thead><tr><th>Tipo</th><th>Nudo</th><th>Valor</th><th>X</th></tr></thead>
+                <tbody class="loadTbody"></tbody>
+            </table>
+            <button type="button" class="add" onclick="addRow(this, 'load')">+ Carga</button>
         `;
 
         container.appendChild(div);
 
-        const elemTbody = div.querySelector('.elemTbody');
-        const supportTbody = div.querySelector('.supportTbody');
+        const obj = {
+            div,
+            elem: div.querySelector('.elemTbody'),
+            support: div.querySelector('.supportTbody'),
+            spring: div.querySelector('.springTbody'),
+            presc: div.querySelector('.prescTbody'),
+            load: div.querySelector('.loadTbody')
+        };
 
-        // Añadir filas por defecto
-        addRowToTbody(elemTbody, 'elem', 1, 2, 0.0833, 1.0, 10.0, 100);
-        addRowToTbody(supportTbody, 'support', 1, 0, 1, 1);
-        addRowToTbody(supportTbody, 'support', 2, 0, 1, 1);
+        // Valores por defecto
+        addElemRow(obj.elem, 1, 2, 0.0833, 1.0, 10.0, 100, 0, 1.0, 0, 0, 0, 0.0833, 0.0833, 0, 0);
+        addSupportRow(obj.support, 1, 0, 1, 1);
+        addSupportRow(obj.support, 2, 0, 1, 1);
 
-        cases.push({ div, elemTbody, supportTbody });
+        cases.push(obj);
     }
-    console.log(`Inicializados ${n} casos`);
 }
 
-function addRowToTbody(tbody, type, ...values) {
+function addElemRow(tbody, ...v) {
     const row = tbody.insertRow();
-    const idx = tbody.rows.length;
+    row.innerHTML = `
+        <td>${tbody.rows.length}</td>
+        <td><input value="${v[0]}"></td><td><input value="${v[1]}"></td>
+        <td><input value="${v[2]}"></td><td><input value="${v[3]}"></td>
+        <td><input value="${v[4]}"></td><td><input value="${v[5]}"></td>
+        <td><input value="${v[6]}"></td><td><input value="${v[7]}"></td>
+        <td><input value="${v[8]}"></td><td><input value="${v[9]}"></td>
+        <td><input value="${v[10]}"></td><td><input value="${v[11]}"></td>
+        <td><input value="${v[12]}"></td><td><input value="${v[13]}"></td>
+        <td><input value="${v[14]}"></td><td><input value="${v[15]}"></td>
+        <td><button type="button" class="del" onclick="this.parentElement.parentElement.remove()">X</button></td>
+    `;
+}
 
-    if (type === 'elem') {
-        row.innerHTML = `
-            <td>${idx}</td>
-            <td><input value="${values[0]}"></td>
-            <td><input value="${values[1]}"></td>
-            <td><input value="${values[2]}"></td>
-            <td><input value="${values[3]}"></td>
-            <td><input value="${values[4]}"></td>
-            <td><input value="${values[5]}"></td>
-            <td><button type="button" class="del" onclick="this.parentElement.parentElement.remove()">X</button></td>
-        `;
-    } else if (type === 'support') {
-        row.innerHTML = `
-            <td><input value="${values[0]}"></td>
-            <td><input value="${values[1]}"></td>
-            <td><input value="${values[2]}"></td>
-            <td><input value="${values[3]}"></td>
-            <td><button type="button" class="del" onclick="this.parentElement.parentElement.remove()">X</button></td>
-        `;
-    }
+function addSupportRow(tbody, ...v) {
+    const row = tbody.insertRow();
+    row.innerHTML = `
+        <td><input value="${v[0]}"></td>
+        <td><input value="${v[1]}"></td>
+        <td><input value="${v[2]}"></td>
+        <td><input value="${v[3]}"></td>
+        <td><button type="button" class="del" onclick="this.parentElement.parentElement.remove()">X</button></td>
+    `;
 }
 
 function addRow(btn, type) {
     const section = btn.closest('.section');
     const tbody = section.querySelector(`.${type}Tbody`);
-    const count = tbody.rows.length + 1;
+    const n = tbody.rows.length + 1;
+
     if (type === 'elem') {
-        addRowToTbody(tbody, 'elem', count, count + 1, 0.0833, 1.0, 10.0, 100);
-    } else {
-        addRowToTbody(tbody, 'support', count, 0, 1, 1);
+        addElemRow(tbody, n, n+1, 0.0833, 1.0, 10.0, 100, 0, 1.0, 0, 0, 0, 0.0833, 0.0833, 0, 0);
+    } else if (type === 'support') {
+        addSupportRow(tbody, n, 0, 1, 1);
+    } else if (type === 'spring') {
+        const row = tbody.insertRow();
+        row.innerHTML = `<td><input value="1"></td><td><input value="2"></td><td><input value="500.0"></td><td><button class="del" onclick="this.parentElement.parentElement.remove()">X</button></td>`;
+    } else if (type === 'presc') {
+        const row = tbody.insertRow();
+        row.innerHTML = `<td><input value="1"></td><td><input value="2"></td><td><input value="0.0"></td><td><button class="del" onclick="this.parentElement.parentElement.remove()">X</button></td>`;
+    } else if (type === 'load') {
+        const row = tbody.insertRow();
+        row.innerHTML = `<td><select><option>X</option><option>Y</option><option>Mom</option></select></td><td><input value="1"></td><td><input value="-10.0"></td><td><button class="del" onclick="this.parentElement.parentElement.remove()">X</button></td>`;
     }
 }
 
@@ -135,61 +177,94 @@ function generateInput() {
     let output = '';
     const kasos = parseInt(document.getElementById('kasos').value) || 1;
     output += kasos.toString().padStart(3) + '\n';
-    console.log('Iniciando generación...');
 
     for (const c of cases) {
-        const desc = (c.div.querySelector('.desc').value + ' '.repeat(80)).substring(0, 80);
-        for (let i = 0; i < 40; i++) output += desc.substring(i * 2, i * 2 + 2);
+        // Descripción (40 a2)
+        const desc = (c.div.querySelector('.desc').value + ' '.repeat(80)).substring(0,80);
+        for (let i = 0; i < 40; i++) output += desc.substring(i*2, i*2+2);
         output += '\n';
 
-        const nm = parseInt(c.div.querySelector('.nm').value);
-        const nn = parseInt(c.div.querySelector('.nn').value);
-        const na = parseInt(c.div.querySelector('.na').value);
+        // Línea general
+        const [nm, nn, na, nspd, jbw, nca1, nca2, nca3] = ['nm','nn','na','nspd','jbw','nca1','nca2','nca3'].map(cls => parseInt(c.div.querySelector('.'+cls).value) || 0);
         const E = parseFloat(c.div.querySelector('.E').value).toExponential(4).padStart(11);
+        output += [nm,nn,na,nspd,jbw,nca1,nca2,nca3].map(v=>v.toString().padStart(3)).join('') + E + '\n';
 
-        output += [nm, nn, na, 0, 6, 0, 0, 0].map(v => v.toString().padStart(3)).join('') + E + '\n';
+        // Validar nm
+        if (c.elem.rows.length !== nm) { alert(`nm = ${nm}, pero hay ${c.elem.rows.length} elementos`); return; }
 
-        const elemRows = c.elemTbody.querySelectorAll('tr');
-        if (elemRows.length !== nm) {
-            alert(`Error: nm = ${nm}, pero hay ${elemRows.length} elementos`);
-            return;
-        }
-
-        elemRows.forEach(row => {
-            const inputs = row.querySelectorAll('input');
+        // Elementos
+        c.elem.querySelectorAll('tr').forEach(row => {
+            const inp = row.querySelectorAll('input');
             output += 
-                inputs[0].value.padStart(3) +
-                inputs[1].value.padStart(3) +
-                parseFloat(inputs[2].value).toFixed(5).padStart(8) +
-                parseFloat(inputs[3].value).toFixed(2).padStart(6) +
-                parseFloat(inputs[4].value).toFixed(2).padStart(6) +
-                Math.round(parseFloat(inputs[5].value)).toString().padStart(6) +
-                '   0.000   1.000   0.000   0.000   0.00 0.08330 0.08330 0 0\n';
+                inp[0].value.padStart(3) +
+                inp[1].value.padStart(3) +
+                parseFloat(inp[2].value).toFixed(5).padStart(8) +
+                parseFloat(inp[3].value).toFixed(2).padStart(6) +
+                parseFloat(inp[4].value).toFixed(2).padStart(6) +
+                Math.round(parseFloat(inp[5].value)).toString().padStart(6) +
+                parseFloat(inp[6].value).toFixed(3).padStart(6) +
+                parseFloat(inp[7].value).toFixed(3).padStart(6) +
+                parseFloat(inp[8].value).toFixed(3).padStart(6) +
+                parseFloat(inp[9].value).toFixed(3).padStart(6) +
+                parseFloat(inp[10].value).toFixed(2).padStart(7) +
+                parseFloat(inp[11].value).toFixed(5).padStart(6) +
+                parseFloat(inp[12].value).toFixed(5).padStart(6) +
+                inp[13].value.padStart(1) +
+                inp[14].value.padStart(1) + '\n';
         });
 
-        c.supportTbody.querySelectorAll('tr').forEach(row => {
-            const inputs = row.querySelectorAll('input');
-            output += ' 1' + inputs[0].value.padStart(2) + inputs[1].value.padStart(2) + inputs[2].value.padStart(2) + inputs[3].value.padStart(2) + '\n';
+        // Apoyos (grupos de 8)
+        const supports = Array.from(c.support.querySelectorAll('tr'));
+        for (let i = 0; i < supports.length; i += 8) {
+            const group = supports.slice(i, i+8);
+            output += group.length.toString().padStart(2);
+            group.forEach(row => {
+                const inp = row.querySelectorAll('input');
+                output += inp[0].value.padStart(2) + inp[1].value.padStart(2) + inp[2].value.padStart(2) + inp[3].value.padStart(2);
+            });
+            output += '\n';
+        }
+
+        // Resortes y Prescritos (grupos de 4)
+        const extras = [...c.spring.querySelectorAll('tr'), ...c.presc.querySelectorAll('tr')];
+        for (let i = 0; i < extras.length; i += 4) {
+            const group = extras.slice(i, i+4);
+            output += group.length.toString().padStart(2);
+            group.forEach(row => {
+                const inp = row.querySelectorAll('input');
+                output += inp[0].value.padStart(2) + inp[1].value.padStart(2) + parseFloat(inp[2].value).toExponential(5).padStart(12);
+            });
+            output += '\n';
+        }
+
+        // Cargas (por tipo)
+        ['X','Y','Mom'].forEach(t => {
+            const loads = Array.from(c.load.querySelectorAll('tr')).filter(r => r.querySelector('select').value === t);
+            for (let i = 0; i < loads.length; i += 7) {
+                const group = loads.slice(i, i+7);
+                output += group.length.toString().padStart(2);
+                group.forEach(r => {
+                    const inp = r.querySelectorAll('input');
+                    output += inp[0].value.padStart(2) + parseFloat(inp[1].value).toFixed(2).padStart(7);
+                });
+                output += '\n';
+            }
         });
 
         output += '\n';
     }
 
-    const textarea = document.getElementById('outputTextarea');
-    textarea.value = output.trim();
-    console.log('Input generado:\n', output);
+    document.getElementById('output').value = output.trim();
 }
 
 function downloadTxt() {
-    const text = document.getElementById('outputTextarea').value;
+    const text = document.getElementById('output').value;
     if (!text) return alert('Genera el input primero');
-    const blob = new Blob([text], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
+    const blob = new Blob([text], {type: 'text/plain'});
     const a = document.createElement('a');
-    a.href = url;
+    a.href = URL.createObjectURL(blob);
     a.download = 'input.txt';
     a.click();
-    URL.revokeObjectURL(url);
 }
 </script>
 
