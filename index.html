@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZAPEL77P - Input 100% COMPATIBLE</title>
+    <title>ZAPEL77P - Generador de Input</title>
     <style>
         body {font-family: Arial; margin: 20px; background: #f4f4f4;}
         h1 {text-align: center; color: #0066cc;}
@@ -21,7 +21,7 @@
 </head>
 <body>
 
-<h1>ZAPEL77P - Input 100% COMPATIBLE</h1>
+<h1>ZAPEL77P - Generador de Input</h1>
 
 <div class="section">
     <label>Número de casos:</label>
@@ -38,9 +38,8 @@
 <script>
 let cases = [];
 
-// INICIALIZAR AL CARGAR LA PÁGINA
+// INICIALIZAR AL CARGAR
 window.onload = function() {
-    console.log("Página cargada. Inicializando...");
     initCases();
 };
 
@@ -194,7 +193,7 @@ function downloadTxt() {
     const blob = new Blob([text], {type: 'text/plain'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'inp.txt';  // NOMBRE CORRECTO
+    a.download = 'inp.txt';
     a.click();
 }
 </script>
