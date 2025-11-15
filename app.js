@@ -307,6 +307,7 @@ function generateTxt() {
   let maxSpan = 0;
   let maxNode = 0;
 
+  // 1) Leer elementos
   Array.from(elementsTbody.querySelectorAll('tr')).forEach((tr, idx) => {
     const ni = parseInt(tr.querySelector('.el-ni').value || '1', 10);
     const nj = parseInt(tr.querySelector('.el-nj').value || '1', 10);
@@ -327,6 +328,7 @@ function generateTxt() {
 
   const nm = elements.length;
 
+  // 2) Leer soportes
   const supports = [];
   Array.from(supportsTbody.querySelectorAll('tr')).forEach(tr => {
     const node = parseInt(tr.querySelector('.sup-node').value || '1', 10);
@@ -340,18 +342,22 @@ function generateTxt() {
   });
   const na = supports.length;
 
+  // 3) Leer cargas en Y
   const loadsFy = [];
   Array.from(fyTbody.querySelectorAll('tr')).forEach(tr => {
     const node = parseInt(tr.querySelector('.fy-node').value || '1', 10);
     const val  = parseFloat(tr.querySelector('.fy-val').value || '0');
 
     if (node > maxNode) maxNode = node;
-    loadsFy.push({ node, val });
+    if (Math.abs(val) > 1e-9) {
+      loadsFy.push({ node, val });
+    }
   });
   const nca2 = loadsFy.length;
 
   const nn = maxNode === 0 ? 1 : maxNode;
 
+  // 4) Parámetros globales
   let jbw;
   if (jbwInput) {
     jbw = parseInt(jbwInput, 10);
@@ -360,52 +366,85 @@ function generateTxt() {
   }
 
   const nspd = 0;
-  const nca1 = 0;
+  // Estos tres los ponemos como en el archivo "bueno": 1 0 0
+  const nca1 = 1;
   const nca3 = 0;
 
   const lines = [];
 
-  // Línea 1: número de casos (si lo necesitas para tu ZAPEL)
+  // Línea 1: número de casos
   lines.push('1');
 
   // Línea 2: descripción
   lines.push(desc);
 
-  // Línea 3: global, Ela con un decimal
+  // Línea 3: global (igual estructura que el acera.txt largo)
+  // nm  nn  na  nspd  jbw  1  0  0  Ela
   lines.push(
-    `${nm}  ${nn}  ${na}  ${nspd}  ${jbw}  ${nca1}  ${nca2}  ${nca3}  ${Number(ela).toFixed(1)}`
+    `${nm}   ${nn}   ${na}   ${nspd}   ${jbw}   ${nca1}   0   ${nca3} ${Number(ela).toExponential(4)}`
   );
 
-  // Líneas de elementos, todos reales con decimales fijos
+  // 5) Líneas de elementos en formato largo:
+  // mem  ni  nj  I  A  L   0  0.000  0.000  pa  pb  0.00  0.00  0.00 00
   elements.forEach(el => {
+    const Istr  = Number(el.I).toFixed(5);   // 0.02400
+    const Astr  = Number(el.A).toFixed(2);   // 1.66
+    const Lstr  = Number(el.L).toFixed(2);   // 5.00, 10.00
+    const pastr = Number(el.pa).toFixed(3);  // -0.250
+    const pbstr = Number(el.pb).toFixed(3);  // -0.250
+
     const line =
-      `${el.mem}  ${el.ni}  ${el.nj}` +
-      `   ${Number(el.I).toFixed(4)}` +
-      `  ${Number(el.A).toFixed(2)}` +
-      `  ${Number(el.L).toFixed(2)}` +
-      `  ${Number(el.pa).toFixed(2)}` +
-      `  ${Number(el.pb).toFixed(2)}`;
+      `${el.mem}   ${el.ni}   ${el.nj}` +
+      `  ${Istr}` +
+      `   ${Astr}` +
+      `   ${Lstr}` +
+      `      0` +
+      `  0.000  0.000` +           // campos intermedios que dejamos en 0
+      `  ${pastr} ${pbstr}` +      // aquí metemos pa y pb
+      `    0.00   0.00   0.00 00`; // resto en 0
     lines.push(line);
   });
 
-  // Línea de apoyos
-  let supLine = `${na}`;
+  // 6) Soportes: 1 por línea, como en el archivo bueno:
+  // 1  nodo kx ky kr
   supports.forEach(s => {
-    supLine += ` ${s.node} ${s.kx} ${s.ky} ${s.kr}`;
+    lines.push(
+      `1  ${s.node}  ${s.kx}  ${s.ky}  ${s.kr}`
+    );
   });
-  lines.push(supLine);
 
-  // Línea de cargas en Y
+  // 7) Bloques de ceros + cargas, imitando el patrón:
+  // 0
+  // 0
+  // 1 nodo Fy...
+  // 0
+  // 0
+
+  // primer bloque 0
+  lines.push('0');
+  // segundo bloque 0
+  lines.push('0');
+
+  // bloque de cargas en Y
   if (nca2 > 0) {
+    // Ejemplo: 1  2    2.47
     let fyLine = `${nca2}`;
     loadsFy.forEach(L => {
-      fyLine += ` ${L.node} ${Number(L.val).toFixed(2)}`;
+      fyLine += `  ${L.node}   ${Number(L.val).toFixed(2)}`;
     });
     lines.push(fyLine);
+  } else {
+    // si no hay cargas, ponemos 0
+    lines.push('0');
   }
+
+  // últimos dos bloques 0
+  lines.push('0');
+  lines.push('0');
 
   return lines.join('\n');
 }
+
 
 function downloadFile(filename, content) {
   const blob = new Blob([content], { type: 'text/plain' });
