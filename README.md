@@ -18,6 +18,8 @@ Este wizard permite crear modelos estructurales mediante una interfaz gráfica i
 
 Vista rápida del funcionamiento del Wizard:
 
+![Demo del Wizard](assets_folder/wizard_demo.gif)
+
 🔗 Enlaces del Proyecto
 
 🌐 Página Web (GitHub Pages):
