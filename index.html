@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZAPEL77P - Input CORRECTO</title>
+    <title>ZAPEL77P - Input 100% COMPATIBLE</title>
     <style>
         body {font-family: Arial; margin: 20px; background: #f4f4f4;}
         h1 {text-align: center; color: #0066cc;}
@@ -38,7 +38,11 @@
 <script>
 let cases = [];
 
-window.addEventListener('load', () => initCases());
+// INICIALIZAR AL CARGAR LA PÁGINA
+window.onload = function() {
+    console.log("Página cargada. Inicializando...");
+    initCases();
+};
 
 function initCases() {
     const n = parseInt(document.getElementById('kasos').value) || 1;
@@ -151,17 +155,17 @@ function generateInput() {
             output += 
                 inp[0].value.padStart(3) +      // Ni
                 inp[1].value.padStart(3) +      // Nj
-                parseFloat(inp[2].value).toFixed(5).padStart(8) +  // Ii (F8.5)
-                parseFloat(inp[3].value).toFixed(2).padStart(6) +  // A (F6.2)
-                parseFloat(inp[4].value).toFixed(2).padStart(6) +  // L (F6.2)
-                Math.round(parseFloat(inp[5].value)).toString().padStart(6) + // k0 (F6.0)
-                parseFloat(inp[6].value).toFixed(3).padStart(6) +  // X (F6.3)
-                parseFloat(inp[7].value).toFixed(3).padStart(6) +  // exp (F6.3)
-                parseFloat(inp[8].value).toFixed(3).padStart(6) +  // pa (F6.3)
-                parseFloat(inp[9].value).toFixed(3).padStart(6) +  // pb (F6.3)
-                parseFloat(inp[10].value).toFixed(2).padStart(7) + // Ang (F7.2)
-                parseFloat(inp[11].value).toFixed(5).padStart(6) + // Ij (F6.5)
-                parseFloat(inp[12].value).toFixed(5).padStart(6) + // Ic (F6.5)
+                parseFloat(inp[2].value).toFixed(5).padStart(8) +  // Ii
+                parseFloat(inp[3].value).toFixed(2).padStart(6) +  // A
+                parseFloat(inp[4].value).toFixed(2).padStart(6) +  // L
+                Math.round(parseFloat(inp[5].value)).toString().padStart(6) + // k0
+                parseFloat(inp[6].value).toFixed(3).padStart(6) +  // X
+                parseFloat(inp[7].value).toFixed(3).padStart(6) +  // exp
+                parseFloat(inp[8].value).toFixed(3).padStart(6) +  // pa
+                parseFloat(inp[9].value).toFixed(3).padStart(6) +  // pb
+                parseFloat(inp[10].value).toFixed(2).padStart(7) + // Ang
+                parseFloat(inp[11].value).toFixed(5).padStart(6) + // Ij
+                parseFloat(inp[12].value).toFixed(5).padStart(6) + // Ic
                 inp[13].value.padStart(1) +     // H.i
                 inp[14].value.padStart(1) + '\n'; // H.j
         });
@@ -173,4 +177,27 @@ function generateInput() {
             output += group.length.toString().padStart(2);
             group.forEach(row => {
                 const inp = row.querySelectorAll('input');
-               
+                output += inp[0].value.padStart(2) + inp[1].value.padStart(2) + inp[2].value.padStart(2) + inp[3].value.padStart(2);
+            });
+            output += '\n';
+        }
+
+        output += '\n';
+    }
+
+    document.getElementById('output').value = output.trim();
+}
+
+function downloadTxt() {
+    const text = document.getElementById('output').value;
+    if (!text) return alert('Genera primero');
+    const blob = new Blob([text], {type: 'text/plain'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'inp.txt';  // NOMBRE CORRECTO
+    a.click();
+}
+</script>
+
+</body>
+</html>
