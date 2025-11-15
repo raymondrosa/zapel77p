@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZAPEL77P - Generador Input</title>
+    <title>ZAPEL77P - Generador de Input</title>
     <style>
         body {font-family: Arial; margin: 20px; background: #f4f4f4;}
         .section {background: white; padding: 15px; margin: 10px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);}
@@ -35,7 +35,6 @@
 <button onclick="download()">DESCARGAR input.txt</button>
 
 <script>
-// --- DATOS ---
 let cases = [];
 
 function init() {
@@ -58,4 +57,131 @@ function init() {
 
             <h4>Elementos</h4>
             <table><thead><tr>
-                <th>#</th><th>Ni</th><th>Nj</th><th>Ii</th><th>A</th><th>L</th><th>k0</th><th>Acc
+                <th>#</th><th>Ni</th><th>Nj</th><th>Ii</th><th>A</th><th>L</th><th>k0</th><th>Acción</th>
+            </tr></thead><tbody class="elem"></tbody></table>
+            <button type="button" class="add" onclick="addElem(this)">+ Elemento</button>
+
+            <h4>Apoyos</h4>
+            <table><thead><tr><th>Nudo</th><th>X</th><th>Y</th><th>Rot</th><th>Acción</th></tr></thead><tbody class="support"></tbody></table>
+            <button type="button" class="add" onclick="addSupport(this)">+ Apoyo</button>
+        `;
+        container.appendChild(div); // AÑADIDO AL DOM
+
+        const elemTbody = div.querySelector('.elem');
+        const supportTbody = div.querySelector('.support');
+
+        // Añadir filas DESPUÉS de insertar en DOM
+        setTimeout(() => {
+            addRow(elemTbody, 'elem', 1, 2, 0.0833, 1.0, 10.0, 100);
+            addRow(supportTbody, 'support', 1, 0, 1, 1);
+            addRow(supportTbody, 'support', 2, 0, 1, 1);
+        }, 0);
+
+        cases.push({ div, elemTbody, supportTbody });
+    }
+}
+
+function addRow(tbody, type, ...vals) {
+    const tr = tbody.insertRow();
+    if (type === 'elem') {
+        tr.innerHTML = `
+            <td>${tbody.rows.length}</td>
+            <td><input value="${vals[0]}"></td>
+            <td><input value="${vals[1]}"></td>
+            <td><input value="${vals[2]}"></td>
+            <td><input value="${vals[3]}"></td>
+            <td><input value="${vals[4]}"></td>
+            <td><input value="${vals[5]}"></td>
+            <td><button type="button" class="del" onclick="this.parentElement.parentElement.remove(); updateNumbers(tbody)">X</button></td>
+        `;
+    } else {
+        tr.innerHTML = `
+            <td><input value="${vals[0]}"></td>
+            <td><input value="${vals[1]}"></td>
+            <td><input value="${vals[2]}"></td>
+            <td><input value="${vals[3]}"></td>
+            <td><button type="button" class="del" onclick="this.parentElement.parentElement.remove()">X</button></td>
+        `;
+    }
+}
+
+function updateNumbers(tbody) {
+    tbody.querySelectorAll('tr').forEach((tr, i) => {
+        tr.cells[0].textContent = i + 1;
+    });
+}
+
+function addElem(btn) {
+    const tbody = btn.closest('.section').querySelector('.elem');
+    const n = tbody.rows.length + 1;
+    addRow(tbody, 'elem', n, n+1, 0.0833, 1.0, 10.0, 100);
+}
+
+function addSupport(btn) {
+    const tbody = btn.closest('.section').querySelector('.support');
+    const n = tbody.rows.length + 1;
+    addRow(tbody, 'support', n, 0, 1, 1);
+}
+
+function generate() {
+    let out = '';
+    const kasos = parseInt(document.getElementById('kasos').value) || 1;
+    out += kasos.toString().padStart(3) + '\n';
+
+    for (const c of cases) {
+        const desc = (c.div.querySelector('.desc').value + ' '.repeat(80)).substring(0,80);
+        for (let i = 0; i < 40; i++) out += desc.substring(i*2, i*2+2);
+        out += '\n';
+
+        const nm = parseInt(c.div.querySelector('.nm').value);
+        const nn = parseInt(c.div.querySelector('.nn').value);
+        const na = parseInt(c.div.querySelector('.na').value);
+        const E = parseFloat(c.div.querySelector('.E').value).toExponential(4).padStart(11);
+
+        out += [nm, nn, na, 0, 6, 0, 0, 0].map(x => x.toString().padStart(3)).join('') + E + '\n';
+
+        const elems = c.elemTbody.querySelectorAll('tr');
+        if (elems.length !== nm) {
+            alert(`Error: nm = ${nm}, pero hay ${elems.length} elementos`);
+            return;
+        }
+
+        elems.forEach(row => {
+            const inp = row.querySelectorAll('input');
+            out += 
+                inp[0].value.padStart(3) +
+                inp[1].value.padStart(3) +
+                parseFloat(inp[2].value).toFixed(5).padStart(8) +
+                parseFloat(inp[3].value).toFixed(2).padStart(6) +
+                parseFloat(inp[4].value).toFixed(2).padStart(6) +
+                Math.round(inp[5].value).toString().padStart(6) +
+                '   0.000   1.000   0.000   0.000   0.00 0.08330 0.08330 0 0\n';
+        });
+
+        c.supportTbody.querySelectorAll('tr').forEach(row => {
+            const inp = row.querySelectorAll('input');
+            out += ' 1' + inp[0].value.padStart(2) + inp[1].value.padStart(2) + inp[2].value.padStart(2) + inp[3].value.padStart(2) + '\n';
+        });
+
+        out += '\n';
+    }
+
+    document.getElementById('output').value = out.trim();
+}
+
+function download() {
+    const text = document.getElementById('output').value;
+    if (!text) return alert('Genera primero');
+    const blob = new Blob([text], {type: 'text/plain'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'input.txt';
+    a.click();
+}
+
+// INICIAR AL CARGAR
+window.onload = init;
+</script>
+
+</body>
+</html>
