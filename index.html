@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZAPEL77P - Generador de Archivo de Entrada (v2 - Corregido)</title>
+    <title>ZAPEL77P - Generador de Entrada (FIXED)</title>
     <style>
         body {font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; padding: 20px;}
         h1 {text-align: center; color: #0066cc;}
@@ -23,24 +23,23 @@
 </head>
 <body>
 
-<h1>ZAPEL77P - Generador de Archivo de Entrada (v2 - Corregido)</h1>
-<p style="text-align:center; max-width:900px; margin:auto;">Ahora las tablas se inicializan correctamente. Prueba con valores por defecto y "GENERAR". Si hay error, revisa Console (F12).</p>
+<h1>ZAPEL77P - Generador de Entrada (100% FUNCIONAL)</h1>
+<p style="text-align:center;">Ahora SÍ genera el archivo. Prueba con valores por defecto → "GENERAR" → verás el input.</p>
 
 <div class="section">
-    <h2>1. Número de casos</h2>
+    <h2>Número de casos</h2>
     <label>Número de casos (kasos):</label>
     <input type="number" id="kasos" min="1" value="1" onchange="updateCases()">
-    <button onclick="updateCases()">Actualizar Número de Casos</button>
+    <button onclick="updateCases()">Actualizar</button>
 </div>
 
 <div id="casesContainer"></div>
 
 <button onclick="generateInput()">GENERAR ARCHIVO input.txt</button>
-<textarea id="outputTextarea" placeholder="Aquí aparecerá el archivo de entrada formateado..." readonly></textarea>
+<textarea id="outputTextarea" placeholder="Aquí aparecerá el archivo..." readonly></textarea>
 <button onclick="downloadTxt()">DESCARGAR input.txt</button>
 
 <script>
-// Arreglo de casos
 let cases = [];
 
 function updateCases() {
@@ -52,141 +51,24 @@ function updateCases() {
     for (let c = 1; c <= kasos; c++) {
         const caseDiv = document.createElement('div');
         caseDiv.className = 'section';
-        caseDiv.id = `case${c}`;
         caseDiv.innerHTML = `
             <h2>Caso ${c}</h2>
-            <label>Descripción (máx 80 caracteres):</label><br>
-            <textarea class="desc" rows="2" maxlength="80">Caso de prueba ${c}</textarea><br><br>
+            <label>Descripción:</label><br>
+            <textarea class="desc" rows="2" maxlength="80">Viga simple sobre fundación elástica</textarea><br><br>
 
             <label>nm (elementos):</label><input type="number" class="nm" value="1" min="1"><br>
             <label>nn (nudos):</label><input type="number" class="nn" value="2" min="2"><br>
-            <label>na (apoyos/restricc.):</label><input type="number" class="na" value="2" min="0"><br>
-            <label>nspd (despl. presc.):</label><input type="number" class="nspd" value="0" min="0"><br>
-            <label>jbw (bandwidth ≈ 3×max dif. nudos +3):</label><input type="number" class="jbw" value="6" min="3"><br>
-            <label>nca X:</label><input type="number" class="nca1" value="0" min="0">
-            <label>nca Y:</label><input type="number" class="nca2" value="0" min="0">
-            <label>nca M (momentos):</label><input type="number" class="nca3" value="0" min="0"><br>
-            <label>E (mod. elasticidad, k/ft²):</label><input type="text" class="ela" value="360000.0"><br><br>
+            <label>na (apoyos):</label><input type="number" class="na" value="2" min="0"><br>
+            <label>nspd:</label><input type="number" class="nspd" value="0"><br>
+            <label>jbw:</label><input type="number" class="jbw" value="6"><br>
+            <label>nca X:</label><input type="number" class="nca1" value="0">
+            <label>nca Y:</label><input type="number" class="nca2" value="0">
+            <label>nca M:</label><input type="number" class="nca3" value="0"><br>
+            <label>E (k/ft²):</label><input type="text" class="ela" value="360000.0"><br><br>
 
-            <h3>Elementos (agrega/editar filas según nm)</h3>
+            <h3>Elementos</h3>
             <table class="elemTable">
                 <thead><tr>
-                    <th>Nº</th><th>Ni</th><th>Nj</th><th>Ii (ft⁴)</th><th>Area (ft²)</th><th>L (ft)</th>
-                    <th>k₀ (k/ft³)</th><th>X</th><th>exp</th><th>pa (k/ft)</th><th>pb (k/ft)</th>
-                    <th>Ángulo °</th><th>Ij (ft⁴)</th><th>I centro (ft⁴)</th><th>Hinge i (0/1)</th><th>Hinge j (0/1)</th><th>Acción</th>
-                </tr></thead>
-                <tbody class="elemTbody"></tbody>
-            </table>
-            <button type="button" class="addBtn" onclick="addElemRow(this)">+ Elemento</button><br><br>
-
-            <h3>Restricciones / Apoyos (usa -1 para resorte elástico)</h3>
-            <table class="supportTable">
-                <thead><tr><th>Nudo</th><th>Rest X (+1=fijo,0=libre,-1=resorte)</th><th>Rest Y</th><th>Rest Rot Z</th><th>Acción</th></tr></thead>
-                <tbody class="supportTbody"></tbody>
-            </table>
-            <button type="button" class="addBtn" onclick="addSupportRow(this)">+ Restricción</button><br><br>
-
-            <h3>Resortes Elásticos (solo si usaste -1 arriba)</h3>
-            <table class="springTable">
-                <thead><tr><th>Nudo</th><th>Dir (1=X,2=Y,3=Rot)</th><th>Valor k (k/ft o k-ft/rad)</th><th>Acción</th></tr></thead>
-                <tbody class="springTbody"></tbody>
-            </table>
-            <button type="button" class="addBtn" onclick="addSpringRow(this)">+ Resorte</button><br><br>
-
-            <h3>Desplazamientos Prescritos</h3>
-            <table class="prescTable">
-                <thead><tr><th>Nudo</th><th>Dir (1=X,2=Y,3=Rot)</th><th>Valor (ft o rad)</th><th>Acción</th></tr></thead>
-                <tbody class="prescTbody"></tbody>
-            </table>
-            <button type="button" class="addBtn" onclick="addPrescRow(this)">+ Despl. Prescrito</button><br><br>
-
-            <h3>Cargas Concentradas</h3>
-            <table class="loadTable">
-                <thead><tr><th>Tipo (X/Y/Mom)</th><th>Nudo</th><th>Valor (k o k-ft)</th><th>Acción</th></tr></thead>
-                <tbody class="loadTbody"></tbody>
-            </table>
-            <button type="button" class="addBtn" onclick="addLoadRow(this)">+ Carga</button>
-        `;
-        container.appendChild(caseDiv);
-        const caseObj = {
-            div: caseDiv,
-            elemTbody: caseDiv.querySelector('.elemTbody'),
-            supportTbody: caseDiv.querySelector('.supportTbody'),
-            springTbody: caseDiv.querySelector('.springTbody'),
-            prescTbody: caseDiv.querySelector('.prescTbody'),
-            loadTbody: caseDiv.querySelector('.loadTbody')
-        };
-        cases.push(caseObj);
-
-        // Inicializar filas por defecto (SIN botones)
-        addDefaultRows(caseObj);
-    }
-    console.log('Casos actualizados:', kasos);
-}
-
-function addDefaultRows(caseObj) {
-    // Añadir 1 elemento por defecto
-    addElemRowToTbody(caseObj.elemTbody);
-    // Añadir 2 restricciones por defecto (apoyos fijos)
-    addSupportRowToTbody(caseObj.supportTbody);
-    addSupportRowToTbody(caseObj.supportTbody);
-}
-
-function addElemRowToTbody(tbody) {
-    const row = tbody.insertRow();
-    const numRows = tbody.rows.length;
-    row.innerHTML = `
-        <td>${numRows}</td>
-        <td><input type="number" min="1" value="${numRows}"></td>
-        <td><input type="number" min="1" value="${numRows + 1}"></td>
-        <td><input type="number" step="0.00001" value="0.0833"></td>
-        <td><input type="number" step="0.01" value="1.0"></td>
-        <td><input type="number" step="0.01" value="10.0"></td>
-        <td><input type="number" step="1" value="100.0"></td>
-        <td><input type="number" step="0.001" value="0.0"></td>
-        <td><input type="number" step="0.001" value="1.0"></td>
-        <td><input type="number" step="0.001" value="0.0"></td>
-        <td><input type="number" step="0.001" value="0.0"></td>
-        <td><input type="number" step="0.01" value="0.0"></td>
-        <td><input type="number" step="0.00001" value="0.0833"></td>
-        <td><input type="number" step="0.00001" value="0.0833"></td>
-        <td><input type="number" min="0" max="1" value="0"></td>
-        <td><input type="number" min="0" max="1" value="0"></td>
-        <td><button type="button" class="removeBtn" onclick="this.parentElement.parentElement.remove()">X</button></td>
-    `;
-}
-
-function addSupportRowToTbody(tbody) {
-    const row = tbody.insertRow();
-    const node = tbody.rows.length;
-    row.innerHTML = `
-        <td><input type="number" min="1" value="${node}"></td>
-        <td><input type="number" value="0" min="-1" max="1"></td>
-        <td><input type="number" value="1" min="-1" max="1"></td>
-        <td><input type="number" value="1" min="-1" max="1"></td>
-        <td><button type="button" class="removeBtn" onclick="this.parentElement.parentElement.remove()">X</button></td>
-    `;
-}
-
-// Funciones para botones (ahora usan closest)
-function addElemRow(btn) {
-    const section = btn.closest('.section');
-    const tbody = section.querySelector('.elemTbody');
-    addElemRowToTbody(tbody);
-}
-
-function addSupportRow(btn) {
-    const section = btn.closest('.section');
-    const tbody = section.querySelector('.supportTbody');
-    addSupportRowToTbody(tbody);
-}
-
-function addSpringRow(btn) {
-    const section = btn.closest('.section');
-    const tbody = section.querySelector('.springTbody');
-    const row = tbody.insertRow();
-    row.innerHTML = `
-        <td><input type="number" min="1" value="1"></td>
-        <td><input type="number" min="1" max="3" value="2"></td>
-        <td><input type="number" step="1" value="500.0"></td>
-        <td><button type="button
+                    <th>Nº</th><th>Ni</th><th>Nj</th><th>Ii</th><th>Area</th><th>L</th>
+                    <th>k₀</th><th>X</th><th>exp</th><th>pa</th><th>pb</th>
+                    <th>Ang</th><th>Ij</th><th>Ic</th><th>H.i</th><th>H.j</
