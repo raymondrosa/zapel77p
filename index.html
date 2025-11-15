@@ -186,4 +186,172 @@ function addLoadRow(btn) {
     const tbody = btn.parentElement.parentElement.querySelector('.loadTbody');
     const row = tbody.insertRow();
     row.innerHTML = `
-        <td><select><option>X</option>
+        <td><select><option>X</option><option selected>Y</option><option>Mom</option></select></td>
+        <td><input type="number" min="1" value="1"></td>
+        <td><input type="number" step="0.1" value="-10.0"></td>
+        <td><button type="button" class="removeBtn" onclick="this.parentElement.parentElement.remove()">X</button></td>
+    `;
+}
+
+// Función principal corregida
+function generateInput() {
+    let output = '';
+    const kasos = parseInt(document.getElementById('kasos').value) || 1;
+    output += kasos.toString().padStart(3, ' ') + '\n';
+
+    cases.forEach((caseData, idx) => {
+        const section = caseData.div;
+        const nm = parseInt(section.querySelector('.nm').value) || 1;
+        const nn = parseInt(section.querySelector('.nn').value) || 2;
+        const na = parseInt(section.querySelector('.na').value) || 0;
+        const nspd = parseInt(section.querySelector('.nspd').value) || 0;
+        const jbw = parseInt(section.querySelector('.jbw').value) || 6;
+        const nca1 = parseInt(section.querySelector('.nca1').value) || 0;
+        const nca2 = parseInt(section.querySelector('.nca2').value) || 0;
+        const nca3 = parseInt(section.querySelector('.nca3').value) || 0;
+        const ela = parseFloat(section.querySelector('.ela').value) || 360000;
+        const elaStr = ela.toExponential().padStart(11, ' ');
+
+        // Descripción (40 a2)
+        let desc = section.querySelector('.desc').value.replace(/\s/g, ' ').trim().padEnd(80, ' ').substring(0, 80);
+        let descFormatted = '';
+        for (let i = 0; i < 40; i++) {
+            descFormatted += desc.substring(i * 2, (i + 1) * 2).padEnd(2, ' ');
+        }
+        output += descFormatted + '\n';
+
+        // Línea general: 8i3 + e11.4
+        output += nm.toString().padStart(3, ' ') +
+                  nn.toString().padStart(3, ' ') +
+                  na.toString().padStart(3, ' ') +
+                  nspd.toString().padStart(3, ' ') +
+                  jbw.toString().padStart(3, ' ') +
+                  nca1.toString().padStart(3, ' ') +
+                  nca2.toString().padStart(3, ' ') +
+                  nca3.toString().padStart(3, ' ') +
+                  elaStr + '\n';
+
+        // Elementos: nm líneas de 3i3 + f8.5 + 2f6.2 + f6.0 + 4f6.3 + f7.2 + 2f6.2 + 2i1
+        const elemRows = section.querySelectorAll('.elemTbody tr');
+        if (elemRows.length !== nm) {
+            alert(`Caso ${idx+1}: Ajusta las filas de elementos a ${nm}`);
+            return;
+        }
+        elemRows.forEach((row, rowIdx) => {
+            const inputs = row.querySelectorAll('input');
+            const nom = (rowIdx + 1).toString().padStart(3, ' ');
+            const ni = parseInt(inputs[0].value).toString().padStart(3, ' ');
+            const nj = parseInt(inputs[1].value).toString().padStart(3, ' ');
+            const ri = parseFloat(inputs[2].value).toFixed(5).padStart(8, ' ');
+            const area = parseFloat(inputs[3].value).toFixed(2).padStart(6, ' ');
+            const rl = parseFloat(inputs[4].value).toFixed(2).padStart(6, ' ');
+            const rko = Math.round(parseFloat(inputs[5].value)).toString().padStart(6, ' ');
+            const x = parseFloat(inputs[6].value).toFixed(3).padStart(6, ' ');
+            const expv = parseFloat(inputs[7].value).toFixed(3).padStart(6, ' '); // 'exp' es palabra reservada en JS
+            const pa = parseFloat(inputs[8].value).toFixed(3).padStart(6, ' ');
+            const pb = parseFloat(inputs[9].value).toFixed(3).padStart(6, ' ');
+            const ang = parseFloat(inputs[10].value).toFixed(2).padStart(7, ' ');
+            const bi = parseFloat(inputs[11].value).toFixed(5).padStart(6, ' ');
+            const ci = parseFloat(inputs[12].value).toFixed(5).padStart(6, ' ');
+            const lrel1 = parseInt(inputs[13].value).toString().padStart(1, ' ');
+            const lrel2 = parseInt(inputs[14].value).toString().padStart(1, ' ');
+
+            output += nom + ni + nj + ri + area + rl + rko + x + expv + pa + pb + ang + bi + ci + lrel1 + lrel2 + '\n';
+        });
+
+        // Apoyos: grupos de hasta 8 (nf + 33i2, pero simplificado a líneas con nf)
+        const supportRows = section.querySelectorAll('.supportTbody tr');
+        let nspr = 0; // Contar -1 para resortes
+        supportRows.forEach(row => {
+            const inputs = row.querySelectorAll('input');
+            if (parseInt(inputs[1].value) === -1) nspr++;
+            if (parseInt(inputs[2].value) === -1) nspr++;
+            if (parseInt(inputs[3].value) === -1) nspr++;
+        });
+        // El programa lee hasta na, en grupos
+        if (supportRows.length > 0) {
+            const groupSize = 8; // Aprox para 33i2
+            for (let i = 0; i < supportRows.length; i += groupSize) {
+                const group = Array.from(supportRows).slice(i, i + groupSize);
+                output += group.length.toString().padStart(2, ' ');
+                group.forEach(row => {
+                    const inputs = row.querySelectorAll('input');
+                    const nf = parseInt(inputs[0].value).toString().padStart(2, ' ');
+                    const kx = parseInt(inputs[1].value).toString().padStart(2, ' ');
+                    const ky = parseInt(inputs[2].value).toString().padStart(2, ' ');
+                    const kz = parseInt(inputs[3].value).toString().padStart(2, ' ');
+                    output += nf + kx + ky + kz;
+                });
+                output += '\n';
+            }
+        }
+
+        // Resortes (l=1) y Despl Prescritos (l=2): formato i2 + 4(2i2,e12.5), grupos
+        const allExtra = [...section.querySelectorAll('.springTbody tr'), ...section.querySelectorAll('.prescTbody tr')];
+        const groupSizeExtra = 4;
+        for (let i = 0; i < allExtra.length; i += groupSizeExtra) {
+            const group = allExtra.slice(i, i + groupSizeExtra);
+            output += group.length.toString().padStart(2, ' ');
+            group.forEach(row => {
+                const inputs = row.querySelectorAll('input');
+                const nh = parseInt(inputs[0].value).toString().padStart(2, ' ');
+                const kdir = parseInt(inputs[1].value).toString().padStart(2, ' ');
+                const aa = parseFloat(inputs[2].value).toExponential(5).padStart(12, ' ');
+                output += nh + kdir + aa;
+            });
+            output += '\n';
+        }
+
+        // Cargas: por tipo (X,Y,M), grupos de 7 (i2 + 7(i2,f7.2))
+        const loadTypes = {X: [], Y: [], M: []};
+        section.querySelectorAll('.loadTbody tr').forEach(row => {
+            const selects = row.querySelector('select');
+            const inputs = row.querySelectorAll('input');
+            const type = selects.value;
+            const node = parseInt(inputs[0].value);
+            const val = parseFloat(inputs[1].value).toFixed(2);
+            loadTypes[type].push({node: node.toString().padStart(2, ' '), val: val.padStart(7, ' ')});
+        });
+
+        ['X', 'Y', 'Mom'].forEach(typeKey => {
+            const loads = loadTypes[typeKey];
+            if (loads.length === 0) return;
+            const groupSizeLoad = 7;
+            for (let i = 0; i < loads.length; i += groupSizeLoad) {
+                const group = loads.slice(i, i + groupSizeLoad);
+                output += group.length.toString().padStart(2, ' ');
+                group.forEach(l => {
+                    output += l.node + l.val;
+                });
+                output += '\n';
+            }
+        });
+
+        output += '\n'; // Separador entre casos
+    });
+
+    document.getElementById('outputTextarea').value = output.trim();
+}
+
+function downloadTxt() {
+    const text = document.getElementById('outputTextarea').value;
+    if (!text) {
+        alert('Genera el input primero!');
+        return;
+    }
+    const blob = new Blob([text], {type: 'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'input.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// Inicializar
+updateCases();
+</script>
+</body>
+</html>
