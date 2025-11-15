@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZAPEL77P - Input CORRECTO</title>
+    <title>ZAPEL77P - Input GENERADO</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #0066cc; --success: #28a745; --danger: #dc3545; }
@@ -35,12 +35,14 @@
 <body>
 <div class="container">
     <h1>ZAPEL77P - Generador de Input</h1>
-    <p class="subtitle">Formato 100% compatible • Se muestra al instante</p>
+    <p class="subtitle">Formato 100% compatible • SE MUESTRA AL INSTANTE</p>
 
     <div class="card">
         <div class="form-grid">
             <div><label>Número de casos:</label><input type="number" id="kasos" value="1" min="1"></div>
-            <div style="display:flex; align-items:end;"><button class="btn-primary" onclick="initCases()">Actualizar</button></div>
+            <div style="display:flex; align-items:end;">
+                <button class="btn-primary" onclick="initCases()">Actualizar Casos</button>
+            </div>
         </div>
     </div>
 
@@ -56,18 +58,16 @@
 <script>
 let cases = [];
 
-// INICIALIZAR AL CARGAR COMPLETO
+// INICIALIZAR AL CARGAR
 document.addEventListener('DOMContentLoaded', () => {
-    initCases(); // AHORA SÍ
+    initCases(); // Carga con 1 caso por defecto
 });
 
 function initCases() {
-    const kasosInput = document.getElementById('kasos');
-    if (!kasosInput) return;
-    const n = parseInt(kasosInput.value) || 1;
+    const n = parseInt(document.getElementById('kasos').value) || 1;
     const container = document.getElementById('casesContainer');
     container.innerHTML = '';
-    cases = [];
+    cases = []; // Reinicia
 
     for (let i = 1; i <= n; i++) {
         const card = document.createElement('div');
@@ -112,7 +112,7 @@ function initCases() {
             loadY: card.querySelector('.loadY')
         };
 
-        // DATOS DE TU EJEMPLO
+        // TU EJEMPLO
         addElem(obj.elem, 1, 2, 0.0241, 1.66, 5.00, 0, 0, 0, 0);
         addElem(obj.elem, 2, 3, 0.0241, 1.66, 5.00, 0, 0, 0, 0);
         addElem(obj.elem, 3, 4, 0.0241, 1.66, 10.0, 0, -0.25, -0.25, 0);
@@ -128,19 +128,19 @@ function initCases() {
 function addElem(tbody, ...v) {
     const row = tbody.insertRow();
     row.innerHTML = `<td>${tbody.rows.length}</td>` + v.map(val => `<td><input value="${val}"></td>`).join('') +
-        `<td><button class="btn-danger" onclick="this.parentElement.parentElement.remove()">X</button></td>`;
+        `<td><button class="btn-danger" onclick="this.parentElement.parentElement.remove(); updateCounts(this)">X</button></td>`;
 }
 
 function addSupport(tbody, ...v) {
     const row = tbody.insertRow();
     row.innerHTML = v.map(val => `<td><input value="${val}"></td>`).join('') +
-        `<td><button class="btn-danger" onclick="this.parentElement.parentElement.remove()">X</button></td>`;
+        `<td><button class="btn-danger" onclick="this.parentElement.parentElement.remove(); updateCounts(this)">X</button></td>`;
 }
 
 function addLoadY(tbody, nudo, valor) {
     const row = tbody.insertRow();
     row.innerHTML = `<td><input value="${nudo}"></td><td><input value="${valor}"></td>` +
-        `<td><button class="btn-danger" onclick="this.parentElement.parentElement.remove()">X</button></td>`;
+        `<td><button class="btn-danger" onclick="this.parentElement.parentElement.remove(); updateCounts(this)">X</button></td>`;
 }
 
 function addRow(btn, type) {
@@ -150,11 +150,22 @@ function addRow(btn, type) {
     if (type === 'elem') addElem(tbody, n, n+1, 0.0241, 1.66, 5.0, 0, 0, 0, 0);
     else if (type === 'support') addSupport(tbody, n, 0, 1, 0);
     else if (type === 'loadY') addLoadY(tbody, 1, 0.0);
+    updateCounts(btn);
+}
+
+function updateCounts(btn) {
+    const card = btn.closest('.card');
+    const nm = card.querySelector('.nm');
+    const na = card.querySelector('.na');
+    const nca2 = card.querySelector('.nca2');
+    if (nm) nm.value = card.querySelectorAll('.elem tr').length;
+    if (na) na.value = card.querySelectorAll('.support tr').length;
+    if (nca2) nca2.value = card.querySelectorAll('.loadY tr').length;
 }
 
 function generateInput() {
     if (cases.length === 0) {
-        alert("Primero actualiza los casos");
+        alert("No hay casos. Haz clic en 'Actualizar Casos' primero.");
         return;
     }
 
@@ -163,10 +174,12 @@ function generateInput() {
     output += kasos.toString().padStart(3) + '\n';
 
     for (const c of cases) {
+        // DESCRIPCIÓN
         const desc = (c.div.querySelector('.desc').value + ' '.repeat(80)).substring(0,80);
         for (let i = 0; i < 40; i++) output += desc.substring(i*2, i*2+2);
         output += '\n';
 
+        // LÍNEA GENERAL
         const vals = ['nm','nn','na','nspd','jbw','nca1','nca2','nca3'].map(cls => {
             const v = parseInt(c.div.querySelector('.'+cls).value) || 0;
             return v.toString().padStart(3);
@@ -175,9 +188,8 @@ function generateInput() {
         const eStr = E.toExponential(4).replace('e', 'E').padStart(11);
         output += vals.join('') + eStr + '\n';
 
+        // ELEMENTOS
         const elemRows = c.elem.querySelectorAll('tr');
-        const nm = parseInt(c.div.querySelector('.nm').value);
-        if (elemRows.length !== nm) { alert(`nm = ${nm}, pero hay ${elemRows.length} elementos`); return; }
         elemRows.forEach(row => {
             const i = row.querySelectorAll('input');
             output += 
@@ -193,6 +205,7 @@ function generateInput() {
                 parseFloat(i[9].value).toFixed(3).padStart(6) + '\n';
         });
 
+        // APOYOS
         const supports = Array.from(c.support.querySelectorAll('tr'));
         for (let i = 0; i < supports.length; i += 8) {
             const g = supports.slice(i, i+8);
@@ -204,6 +217,7 @@ function generateInput() {
             output += '\n';
         }
 
+        // CARGAS Y
         const loads = Array.from(c.loadY.querySelectorAll('tr'));
         for (let i = 0; i < loads.length; i += 7) {
             const g = loads.slice(i, i+7);
@@ -221,11 +235,12 @@ function generateInput() {
     const textarea = document.getElementById('output');
     textarea.value = output.trim();
     textarea.scrollTop = 0;
+    console.log("INPUT GENERADO:", output);
 }
 
 function downloadTxt() {
     const text = document.getElementById('output').value;
-    if (!text) return alert('Genera el input primero');
+    if (!text) return alert('Primero genera el input');
     const blob = new Blob([text], {type: 'text/plain'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
