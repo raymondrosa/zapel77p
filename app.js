@@ -90,11 +90,14 @@ function drawModel() {
   const elements = [];
   const nodeSet = new Set();
 
+  // 🔹 LEER ELEMENTOS (ahora también pa y pb)
   Array.from(elementsTbody.querySelectorAll('tr')).forEach(tr => {
     const ni = parseInt(tr.querySelector('.el-ni').value || '0', 10);
     const nj = parseInt(tr.querySelector('.el-nj').value || '0', 10);
+    const pa = parseFloat(tr.querySelector('.el-pa').value || '0');
+    const pb = parseFloat(tr.querySelector('.el-pb').value || '0');
     if (!ni || !nj) return;
-    elements.push({ ni, nj });
+    elements.push({ ni, nj, pa, pb });
     nodeSet.add(ni);
     nodeSet.add(nj);
   });
@@ -115,7 +118,7 @@ function drawModel() {
     nodePos[n] = marginX + span * i;
   });
 
-  // Elementos
+  // 🔹 DIBUJAR ELEMENTOS (linea de la viga)
   ctx.strokeStyle = '#111';
   ctx.lineWidth = 3;
   ctx.beginPath();
@@ -128,7 +131,7 @@ function drawModel() {
   });
   ctx.stroke();
 
-  // Nodos
+  // 🔹 NODOS
   nodes.forEach(n => {
     const x = nodePos[n];
     ctx.fillStyle = '#ffffff';
@@ -143,7 +146,7 @@ function drawModel() {
     ctx.fillText(String(n), x - 3, baseY - 10);
   });
 
-  // Soportes
+  // 🔹 SOPORTES
   const supports = [];
   Array.from(supportsTbody.querySelectorAll('tr')).forEach(tr => {
     const node = parseInt(tr.querySelector('.sup-node').value || '0', 10);
@@ -181,7 +184,7 @@ function drawModel() {
     }
   });
 
-  // Cargas en Y
+  // 🔹 CARGAS NODALES EN Y (como ya tenías)
   const loadsFy = [];
   Array.from(fyTbody.querySelectorAll('tr')).forEach(tr => {
     const node = parseInt(tr.querySelector('.fy-node').value || '0', 10);
@@ -220,6 +223,66 @@ function drawModel() {
 
     const txt = L.val.toFixed(2);
     ctx.fillText(txt, x + 6, y0 + (down ? -4 : 12));
+  });
+
+  // 🔹 CARGAS DISTRIBUIDAS (pa, pb) SOBRE CADA ELEMENTO
+  ctx.strokeStyle = '#b91c1c';
+  ctx.fillStyle = '#b91c1c';
+
+  elements.forEach(el => {
+    const x1 = nodePos[el.ni];
+    const x2 = nodePos[el.nj];
+    if (x1 == null || x2 == null) return;
+
+    const pa = el.pa || 0;
+    const pb = el.pb || 0;
+    const avg = (pa + pb) / 2;
+
+    if (Math.abs(avg) < 1e-9) {
+      // Sin carga distribuida significativa
+      return;
+    }
+
+    const down = avg < 0;  // negativa hacia abajo (como -0.25)
+    const nArrows = 4;     // número de flechas sobre el elemento
+    const yLine = baseY - 28;      // posición de la "línea" de la carga
+    const yBeam = baseY;           // eje de la viga
+    const len = 18;                // longitud de flecha
+
+    // Línea base de la carga distribuida
+    ctx.beginPath();
+    ctx.moveTo(x1 + 8, yLine);
+    ctx.lineTo(x2 - 8, yLine);
+    ctx.stroke();
+
+    // Flechas distribuidas
+    for (let i = 0; i < nArrows; i++) {
+      const t = (i + 0.5) / nArrows;
+      const x = x1 + (x2 - x1) * t;
+      const y0 = down ? yLine : yLine;
+      const y1 = down ? yLine + len : yLine - len;
+
+      ctx.beginPath();
+      ctx.moveTo(x, y0);
+      ctx.lineTo(x, y1);
+      ctx.stroke();
+
+      ctx.beginPath();
+      if (down) {
+        ctx.moveTo(x - 4, y1 - 5);
+        ctx.lineTo(x, y1);
+        ctx.lineTo(x + 4, y1 - 5);
+      } else {
+        ctx.moveTo(x - 4, y1 + 5);
+        ctx.lineTo(x, y1);
+        ctx.lineTo(x + 4, y1 + 5);
+      }
+      ctx.stroke();
+    }
+
+    // Texto de valor promedio
+    const label = avg.toFixed(2);
+    ctx.fillText(label, (x1 + x2) / 2 + 6, yLine - 4);
   });
 }
 
