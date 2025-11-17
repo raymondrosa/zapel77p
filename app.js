@@ -531,22 +531,42 @@ function generateTxt() {
     `  ${nm}  ${nn}  ${na}  ${nspd}  ${jbw}  ${nca1}  ${nca2}  ${nca3}  ${elaStr}`
   );
 
-  // Líneas de elementos
+    // Líneas de elementos (alineadas igual que el caso que funciona)
   elements.forEach(el => {
-    const Istr  = noLeadingZeroDecimal(el.I, 4);  // .0241
-    const Astr  = Number(el.A).toFixed(2);        // 1.66
-    const Lstr  = Number(el.L).toFixed(2);        // 5.00, 10.00
-    const pastr = Number(el.pa).toFixed(2);
-    const pbstr = Number(el.pb).toFixed(2);
-
+    const Istr  = noLeadingZeroDecimal(el.I, 4);     // => ".0241"
+    const Astr  = Number(el.A).toFixed(2);           // => "1.66"
+    const Lstr  = Number(el.L).toFixed(2);           // => "5.00", "10.00"
     const hasDistLoad = Math.abs(el.pa) > 1e-9 || Math.abs(el.pb) > 1e-9;
 
-    let line = `  ${el.mem}  ${el.ni}  ${el.nj}   ${Istr}  ${Astr}  ${Lstr}`;
-    if (hasDistLoad) {
-      line += `                    ${pastr}  ${pbstr}`;
+    // Parte base como en las líneas sin carga:
+    // "  3  3  4   .0241  1.66  10.0 "
+    let base = `  ${el.mem}  ${el.ni}  ${el.nj}   ${Istr}  ${Astr}  ${Lstr} `;
+
+    if (!hasDistLoad) {
+      // Si no hay carga distribuida, dejamos la línea corta
+      lines.push(base);
+    } else {
+      // Queremos imitar EXACTAMENTE la posición de "-.25  -.25"
+      // del archivo que sí funciona.
+
+      // Formato tipo ".25" o "-.25" (sin cero antes del punto)
+      const paStr = noLeadingZeroDecimal(el.pa, 2);
+      const pbStr = noLeadingZeroDecimal(el.pb, 2);
+
+      // Hacemos que la parte base llegue hasta la columna 49
+      // (donde empieza el primer "-.25" en tu ejemplo bueno)
+      const basePadded = base.padEnd(49, ' ');
+
+      // Cada campo de carga ocupa 4 caracteres: "-.25"
+      const paField = paStr.padStart(4, ' ');
+      const pbField = pbStr.padStart(4, ' ');
+
+      // Dos espacios entre pa y pb, y dos al final (igual que el ejemplo)
+      const line = basePadded + paField + '  ' + pbField + '  ';
+      lines.push(line);
     }
-    lines.push(line);
   });
+
 
   // Línea de apoyos (compacta)
   let supLine = ` ${na}`;
